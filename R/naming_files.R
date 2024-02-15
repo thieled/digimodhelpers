@@ -67,11 +67,3 @@ create_filename <- function(df,
 }
 
 
-
-df <- data.frame(
-                 country = c("USA", "UK", "Germany"),
-                 party = c("Democrat", "Republican", "Green"),
-                 name = c("Joe Biden", "Donald Trump", "Angela Merkel"))
-
-
-d <- create_filename(df,  platform = "fb", country_var = "country", party_var = "party", name_var = "name", filename_var = "filename")
