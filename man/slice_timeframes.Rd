@@ -11,9 +11,9 @@ slice_timeframes(
 )
 }
 \arguments{
-\item{start_date}{A character or Date object indicating the starting date of the timeframe.}
+\item{start_date}{A character or Date object indicating the starting date of the timeframe. If NULL, it defaults to 1 week before today.}
 
-\item{end_date}{A character or Date object indicating the ending date of the timeframe.}
+\item{end_date}{A character or Date object indicating the ending date of the timeframe. If NULL, it defaults to today.}
 
 \item{unit}{A character vector specifying the unit of the time intervals. Options include "day", "week", "month", "quarter", and "year". Default is "day".}
 }
@@ -26,6 +26,6 @@ This function slices timeframes into intervals specified by the user.
 \examples{
 x <- as.Date("2023-01-01")
 y <- as.Date("2025-11-20")
-slice_timeframes(x, y, "quarter")
+slice_timeframes(x, y, unit = "quarter")
 
 }

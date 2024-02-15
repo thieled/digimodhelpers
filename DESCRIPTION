@@ -13,3 +13,5 @@ Imports:
     dplyr,
     lubridate,
     textclean
+Suggests: 
+    tibble
