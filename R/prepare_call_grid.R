@@ -174,7 +174,6 @@ slice_timeframes <- function(start_date = NULL,
 
 
 
-### testing remote change.
 
 
 #' Create Call Grid for Social Media Data Collection
@@ -265,9 +264,9 @@ create_call_grid <- function(df = df,
   grid_df[["filename_new"]] <-  paste0(
     grid_df[[filename_var]],
     "_FROM_",
-    grid_df[["start_date"]],
+    sub("\\:", "m", sub("\\:", "h", grid_df[["start_datetime"]])),
     "_UNTIL_",
-    grid_df[["end_date"]],
+    sub("\\:", "m", sub("\\:", "h", grid_df[["end_datetime"]])),
     "_SCRAPED"
   )
 
