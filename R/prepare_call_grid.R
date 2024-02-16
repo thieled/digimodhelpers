@@ -109,41 +109,25 @@ drop_redundant <- function(df,
 #'
 #' This function slices timeframes into intervals specified by the user.
 #'
-#' @param start_date A character or Date object indicating the starting date of the timeframe. If NULL, it defaults to 1 week before today.
-#' @param end_date A character or Date object indicating the ending date of the timeframe. If NULL, it defaults to today.
-#' @param unit A character vector specifying the unit of the time intervals. Options include "day", "week", "month", "quarter", and "year". Default is "day".
+#' @param start_date A character or Date object indicating the starting date of the timeframe.
+#'                   If NULL, it defaults to 1 week before today.
+#' @param end_date A character or Date object indicating the ending date of the timeframe.
+#'                 If NULL, it defaults to today.
+#' @param unit A character vector specifying the unit of the time intervals.
+#'             Options include "day", "week", "month", "quarter", and "year". Default is "day".
 #'
-#' @return A data frame containing sliced timeframes with start and end dates, along with corresponding start and end datetimes.
+#' @return A data frame containing sliced timeframes with start and end dates,
+#'         along with corresponding start and end datetimes.
 #'
 #' @examples
-#' x <- as.Date("2023-01-01")
-#' y <- as.Date("2025-11-20")
-#' slice_timeframes(x, y, unit = "quarter")
+#' slice_timeframes(start_date = "2023-01-01", end_date = "2023-12-31", unit = "month")
 #'
 #' @export
 slice_timeframes <- function(start_date = NULL,
                              end_date = NULL,
-                             unit = c(
-                               "day",
-                               "week",
-                               "month",
-                               "quarter",
-                               "year"
-                             )
-) {
+                             unit = c("day", "week", "month", "quarter", "year")) {
 
-  if (is.null(start_date)) {
-    start_date <- lubridate::today() - 7
-    cat("start_date is empty. replace by 1 week before today. \n")
-  }
-
-  start_date <- as.Date(start_date)
-
-  if (start_date >= lubridate::today()) {
-    start_date <- lubridate::today()
-    cat("start_date is in the future. replace by 1 week before today. \n")
-  }
-
+  # Check if end_date is empty
   if (is.null(end_date)) {
     end_date <- lubridate::today()
     cat("end_date is empty. replace by today, 00:00. \n")
@@ -151,25 +135,54 @@ slice_timeframes <- function(start_date = NULL,
 
   end_date <- as.Date(end_date)
 
+  # Check if end_date is in the future
   if (end_date > lubridate::today()) {
     end_date <- lubridate::today()
     cat("end_date is in the future or empty. replace by today, 00:00. \n")
   }
 
+  # Check if start_date is empty
+  if (is.null(start_date)) {
+    start_date <- lubridate::today() - lubridate::days(7)
+    cat("start_date is empty. replace by 1 week before today. \n")
+  }
+
+  # Check if start_date is after end_date
+  if (as.Date(start_date) > end_date){
+    start_date <- end_date - lubridate::days(7)
+    cat("start_date is after end_date. replace by 1 week before end_date. \n")
+  }
+
+  # Set start date in Date format
+  start_date <- as.Date(start_date)
+
+  # Check if start_date is in the future
+  if (start_date >= lubridate::today()) {
+    start_date <- end_date - lubridate::days(7)
+    cat("start_date is in the future. replace by 1 week before end date. \n")
+  }
+
   # Get date sequence
-  seq_dates <- seq(start_date, end_date, by = unit)
+  seq_dates <- seq(start_date, end_date, by = unit) # generate sequence of dates
+  start_days <- lubridate::ceiling_date(lubridate::ymd(seq_dates), unit = unit) # get round start day of next timeframe
+  start_days <- c(as.Date(start_date), start_days[-length(start_days)]) # use original start date; remove last element
+  start_datetime <- start_days |> lubridate::as_datetime()  |> lubridate::format_ISO8601() # set 00h00m00s as start time; bring into the correct format
+  end_datetime <- (lubridate::ceiling_date(lubridate::ymd(start_days), unit = unit) - lubridate::milliseconds(1)) |>  lubridate::format_ISO8601() # get last day of timeframes; set format
 
-  last_day <- lubridate::ceiling_date(lubridate::ymd(seq_dates), unit = unit) - lubridate::days(1)
+  # Replace last datetime with now if later than now
+  if (end_datetime[which.max(lubridate::as_datetime(end_datetime))] > lubridate::now(tzone = "UTC")) {
+    end_datetime[which.max(lubridate::as_datetime(end_datetime))] <- lubridate::now(tzone = "UTC") |> lubridate::format_ISO8601()
+  }
 
-  if (last_day[which.max(last_day)] > lubridate::today()) last_day[which.max(last_day)] <- lubridate::today() # replace last day with today if later than today
+  end_days <- lubridate::as_date(lubridate::as_datetime(end_datetime))
 
-  df <- data.frame(start_date = seq_dates,
-                   start_datetime = paste0(seq_dates, "T00:00:00"),
-                   end_date = last_day,
-                   end_datetime = paste0(last_day, "T00:00:00"))
+  df <- data.frame(start_date = start_days,
+                   start_datetime = start_datetime,
+                   end_date = end_days,
+                   end_datetime = end_datetime
+  )
 
   return(df)
-
 }
 
 
