@@ -261,7 +261,7 @@ create_call_grid <- function(df = df,
     dplyr::left_join(time_df) |>
     dplyr::left_join(handle_df)
 
-  grid_df[["filename_new"]] <-  paste0(
+  grid_df[[filename_var]] <-  paste0(
     grid_df[[filename_var]],
     "_FROM_",
     sub("\\:", "m", sub("\\:", "h", grid_df[["start_datetime"]])),
@@ -273,7 +273,5 @@ create_call_grid <- function(df = df,
   return(grid_df)
 }
 
-
-#
 
 
