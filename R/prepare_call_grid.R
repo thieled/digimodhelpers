@@ -188,27 +188,39 @@ slice_timeframes <- function(start_date = NULL,
 
 
 
-
 #' Create Call Grid for Social Media Data Collection
 #'
-#' This function creates a grid for social media data collection based on specified parameters.
+#' This function constructs a grid of account handles and time frames to collect data from various APIs,
+#' especially useful for social media platforms.
 #'
-#' @param df A data frame containing the data.
-#' @param platform A character vector specifying the platform(s) from which the data is collected. Default is c("fb", "ig", "tt", "yt", "tg", "bc", "bs").
-#' @param country_var A character string specifying the column name in the data frame that contains country information. Default is NULL.
-#' @param party_var A character string specifying the column name in the data frame that contains party information. Default is NULL.
-#' @param name_var A character string specifying the column name in the data frame that contains name information. Default is NULL.
-#' @param filename_var A character string specifying the column name in the data frame that contains filename information. Default is NULL.
-#' @param handle_var A character string specifying the column name in the data frame that contains handle information. Default is NULL.
+#' @param df A data frame containing the relevant data.
+#' @param platform A character vector specifying the platform(s) from which the data is collected.
+#'                 Default is c("fb", "ig", "tt", "yt", "tg", "bc", "bs").
+#' @param country_var A character string specifying the column name in the data frame that contains country information.
+#'                    Default is NULL.
+#' @param party_var A character string specifying the column name in the data frame that contains party information.
+#'                  Default is NULL.
+#' @param name_var A character string specifying the column name in the data frame that contains name information.
+#'                 Default is NULL.
+#' @param filename_var A character string specifying the column name in the data frame that contains filename information.
+#'                     Default is NULL.
+#' @param handle_var A character string specifying the column name in the data frame that contains handle information.
+#'                   Default is NULL.
 #' @param start_date A character or Date object indicating the starting date of the timeframe.
 #' @param end_date A character or Date object indicating the ending date of the timeframe.
-#' @param unit A character vector specifying the unit of the time intervals. Options include "day", "week", "month", "quarter", and "year". Default is "month".
+#' @param unit A character vector specifying the unit of the time intervals.
+#'             Options include "day", "week", "month", "quarter", and "year". Default is "month".
 #' @param name_sep A character string specifying the separator for name variables. Default is "-".
 #' @param lowercase Logical; if TRUE, filenames will be converted to lowercase. Default is TRUE.
 #' @param replace_non_ascii Logical; if TRUE, non-ASCII characters will be replaced in filenames. Default is TRUE.
 #' @param filename_sep A character string specifying the separator for filename construction. Default is "_".
+#' @param sortBy A character string specifying the parameter by which the data will be sorted.
+#' @param parse Logical; if TRUE, the data will be parsed. Default is TRUE.
+#' @param data_path A character string indicating the path where the data will be stored.
+#'                  Default is NULL, which means the data will be stored in the current directory under the "data" folder.
+#' @param count An integer specifying the number of records to fetch. Default is Inf.
 #'
-#' @return A data frame containing the grid for social media data collection, including start and end dates, handles, and filenames.
+#' @return A data frame containing a grid of account handles and time frames for data collection.
 #'
 #' @examples
 #' df <- tibble::tribble(
@@ -242,7 +254,11 @@ create_call_grid <- function(df = df,
                              name_sep = "-",
                              lowercase = TRUE,
                              replace_non_ascii = TRUE,
-                             filename_sep = "_"
+                             filename_sep = "_",
+                             sortBy = "date",
+                             parse = TRUE,
+                             data_path = NULL,
+                             count = Inf
 ) {
 
   time_df <- slice_timeframes(start_date = start_date,
@@ -267,24 +283,53 @@ create_call_grid <- function(df = df,
   )
 
   # Grid
-  handle_df[["handle"]] <- handle_df[[handle_var]]
 
-  grid_df <- expand.grid(list(start_date = time_df[["start_date"]],
-                              handle = handle_df[[handle_var]])) |>
+  # Ensure that handle_var is named correctly
+  grid_list <- list(start_date = time_df[["start_date"]],
+                    handle_df[[handle_var]])
+  names(grid_list)[[2]] <- handle_var
+
+  # Get all combinations of timeframe and accounts
+  grid_df <- expand.grid(grid_list) |>
     dplyr::left_join(time_df) |>
     dplyr::left_join(handle_df)
 
+  # Add time info to filename
   grid_df[[filename_var]] <-  paste0(
     grid_df[[filename_var]],
-    "_FROM_",
+    "_FR_",
     sub("\\:", "m", sub("\\:", "h", grid_df[["start_datetime"]])),
-    "_UNTIL_",
+    "_TO_",
     sub("\\:", "m", sub("\\:", "h", grid_df[["end_datetime"]])),
-    "_SCRAPED"
+    "_DL"
   )
+
+
+  # Replace data path if empty
+  if(is.null(data_path)) data_path <- "./data"
+
+
+  # # Create crowdtangle grid
+  if(platform %in% c("fb", "ig")){
+
+    grid_df <- within(grid_df, {
+      accounts <- grid_df[[handle_var]]
+      start <- grid_df[["start_datetime"]]
+      end <- grid_df[["end_datetime"]]
+      filename <- grid_df[[filename_var]]
+      count <- count
+      sortBy <- sortBy
+      parse <- parse
+      data <- data_path
+    })
+
+    # Reordering columns
+    grid_df <- grid_df[, c("accounts", "start", "end", "filename", "count", "sortBy", "parse", "data")]
+
+  }
+
 
   return(grid_df)
 }
-
 
 

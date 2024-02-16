@@ -18,29 +18,40 @@ create_call_grid(
   name_sep = "-",
   lowercase = TRUE,
   replace_non_ascii = TRUE,
-  filename_sep = "_"
+  filename_sep = "_",
+  sortBy = "date",
+  parse = TRUE,
+  data_path = NULL,
+  count = Inf
 )
 }
 \arguments{
-\item{df}{A data frame containing the data.}
+\item{df}{A data frame containing the relevant data.}
 
-\item{platform}{A character vector specifying the platform(s) from which the data is collected. Default is c("fb", "ig", "tt", "yt", "tg", "bc", "bs").}
+\item{platform}{A character vector specifying the platform(s) from which the data is collected.
+Default is c("fb", "ig", "tt", "yt", "tg", "bc", "bs").}
 
-\item{country_var}{A character string specifying the column name in the data frame that contains country information. Default is NULL.}
+\item{country_var}{A character string specifying the column name in the data frame that contains country information.
+Default is NULL.}
 
-\item{party_var}{A character string specifying the column name in the data frame that contains party information. Default is NULL.}
+\item{party_var}{A character string specifying the column name in the data frame that contains party information.
+Default is NULL.}
 
-\item{name_var}{A character string specifying the column name in the data frame that contains name information. Default is NULL.}
+\item{name_var}{A character string specifying the column name in the data frame that contains name information.
+Default is NULL.}
 
-\item{filename_var}{A character string specifying the column name in the data frame that contains filename information. Default is NULL.}
+\item{filename_var}{A character string specifying the column name in the data frame that contains filename information.
+Default is NULL.}
 
-\item{handle_var}{A character string specifying the column name in the data frame that contains handle information. Default is NULL.}
+\item{handle_var}{A character string specifying the column name in the data frame that contains handle information.
+Default is NULL.}
 
 \item{start_date}{A character or Date object indicating the starting date of the timeframe.}
 
 \item{end_date}{A character or Date object indicating the ending date of the timeframe.}
 
-\item{unit}{A character vector specifying the unit of the time intervals. Options include "day", "week", "month", "quarter", and "year". Default is "month".}
+\item{unit}{A character vector specifying the unit of the time intervals.
+Options include "day", "week", "month", "quarter", and "year". Default is "month".}
 
 \item{name_sep}{A character string specifying the separator for name variables. Default is "-".}
 
@@ -49,12 +60,22 @@ create_call_grid(
 \item{replace_non_ascii}{Logical; if TRUE, non-ASCII characters will be replaced in filenames. Default is TRUE.}
 
 \item{filename_sep}{A character string specifying the separator for filename construction. Default is "_".}
+
+\item{sortBy}{A character string specifying the parameter by which the data will be sorted.}
+
+\item{parse}{Logical; if TRUE, the data will be parsed. Default is TRUE.}
+
+\item{data_path}{A character string indicating the path where the data will be stored.
+Default is NULL, which means the data will be stored in the current directory under the "data" folder.}
+
+\item{count}{An integer specifying the number of records to fetch. Default is Inf.}
 }
 \value{
-A data frame containing the grid for social media data collection, including start and end dates, handles, and filenames.
+A data frame containing a grid of account handles and time frames for data collection.
 }
 \description{
-This function creates a grid for social media data collection based on specified parameters.
+This function constructs a grid of account handles and time frames to collect data from various APIs,
+especially useful for social media platforms.
 }
 \examples{
 df <- tibble::tribble(
