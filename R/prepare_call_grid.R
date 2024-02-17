@@ -385,7 +385,7 @@ drop_existing <- function(path,
   grid <- grid[grid$existing_json == FALSE, ]
 
   # Drop column
-  grid[, !(names(grid) == "existing_json")]
+  grid <- grid[, !(names(grid) == "existing_json")]
 
   return(grid)
 }
