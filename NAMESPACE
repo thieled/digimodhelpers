@@ -3,6 +3,7 @@
 export(call_log_ct)
 export(create_call_grid)
 export(create_filename)
+export(drop_existing)
 export(drop_redundant)
 export(slice_timeframes)
 import(dplyr)

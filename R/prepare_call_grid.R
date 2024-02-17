@@ -217,6 +217,7 @@ slice_timeframes <- function(start_date = NULL,
 #' @param sortBy A character string specifying the parameter by which the data will be sorted.
 #' @param parse Logical; if TRUE, the data will be parsed. Default is TRUE.
 #' @param data_path A character string indicating the path where the data will be stored.
+#' @param drop_existing Logical. Should calls for files that already exist in data_path be excluded from the grid. Default is FALSE.
 #'                  Default is NULL, which means the data will be stored in the current directory under the "data" folder.
 #' @param count An integer specifying the number of records to fetch. Default is Inf.
 #'
@@ -258,7 +259,8 @@ create_call_grid <- function(df = df,
                              sortBy = "date",
                              parse = TRUE,
                              data_path = NULL,
-                             count = Inf
+                             count = Inf,
+                             drop_existing = FALSE
 ) {
 
   time_df <- slice_timeframes(start_date = start_date,
@@ -329,7 +331,61 @@ create_call_grid <- function(df = df,
   }
 
 
+  if(drop_existing==TRUE){
+
+    grid_df <-  drop_existing(path = data_path,
+                              grid = grid_df,
+                              filename_var = filename_var)
+
+  }
+
+
   return(grid_df)
 }
 
 
+
+
+
+#' Checks for already downloaded JSON files and drops corresponding calls from the grid.
+#'
+#' This function checks for already downloaded JSON files in a specified path based on filename patterns.
+#' It then updates the input grid to drop calls that correspond to existing JSON files.
+#'
+#' @param path The path where the JSON files are stored.
+#' @param grid The data frame containing the calls to be filtered.
+#' @param filename_var The variable name in the grid that contains the filenames (default: "filename").
+#' @param recursive Logical indicating whether to search for files recursively in subdirectories (default: FALSE).
+#'
+#' @return Returns a modified grid data frame with calls corresponding to existing JSON files dropped.
+#'
+#' @export
+drop_existing <- function(path,
+                          grid,
+                          filename_var = "filename",
+                          recursive = FALSE) {
+  if (dir.exists(path)[[1]]) {
+    existing_jsons <- list.files(
+      path = path,
+      pattern = ".json$",
+      recursive = recursive,
+      full.names = TRUE,
+      ignore.case = TRUE
+    )
+  }
+
+  # Simplify filenames
+  existing_jsons <- gsub("[^[:alnum:]]", "_", gsub("DL.*", "DL", gsub(".*ct_pull_", "", existing_jsons, perl = TRUE)))
+
+  grid[["existing_json"]] <- gsub("[^[:alnum:]]", "_", grid[[filename_var]]) %in% existing_jsons
+
+  cat(paste0("Dropping calls by filename, n = ", sum(grid$existing_json)))
+
+  # Filter
+  grid <- grid[grid$existing_json == FALSE, ]
+
+  # Drop column
+  grid[, !(names(grid) == "existing_json")]
+
+  return(grid)
+}

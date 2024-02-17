@@ -22,7 +22,8 @@ create_call_grid(
   sortBy = "date",
   parse = TRUE,
   data_path = NULL,
-  count = Inf
+  count = Inf,
+  drop_existing = FALSE
 )
 }
 \arguments{
@@ -65,10 +66,12 @@ Options include "day", "week", "month", "quarter", and "year". Default is "month
 
 \item{parse}{Logical; if TRUE, the data will be parsed. Default is TRUE.}
 
-\item{data_path}{A character string indicating the path where the data will be stored.
-Default is NULL, which means the data will be stored in the current directory under the "data" folder.}
+\item{data_path}{A character string indicating the path where the data will be stored.}
 
 \item{count}{An integer specifying the number of records to fetch. Default is Inf.}
+
+\item{drop_existing}{Logical. Should calls for files that already exist in data_path be excluded from the grid. Default is FALSE.
+Default is NULL, which means the data will be stored in the current directory under the "data" folder.}
 }
 \value{
 A data frame containing a grid of account handles and time frames for data collection.
