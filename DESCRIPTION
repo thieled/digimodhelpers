@@ -15,8 +15,8 @@ Imports:
     logger,
     lubridate,
     purrr,
-    textclean
-Suggests: 
+    stringr,
+    textclean,
     tibble
 Remotes: 
     JBGruber/crowdtangler
