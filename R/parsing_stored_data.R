@@ -102,3 +102,52 @@ parse_filenames <- function(path,
 
   return(df)
 }
+
+
+
+
+
+
+#' Parse Latest JSON Files
+#'
+#' This function parses the latest JSON files based on the datetime information in the filenames.
+#'
+#' @param path A character string specifying the path where the JSON files are located.
+#'
+#' @return A data.table containing parsed information from the latest JSON files.
+#'
+#' @import data.table
+#'
+#' @export
+parse_latest <- function(path){
+
+  # Call "parse filenames" function from digimodhelpers - extract info from json filenames
+  files_df <- parse_filenames(path)
+
+  # set datetime as datetime
+  files_df[["to_datetime"]] <- lubridate::as_datetime(files_df[["to_datetime"]])
+  files_df[["dl_datetime"]] <- lubridate::as_datetime(files_df[["dl_datetime"]])
+
+  # Convert df to data.table
+  data.table::setDT(files_df)
+
+  # Find the latest datetime
+  latest_dt <- files_df[, .SD[to_datetime == max(to_datetime) & dl_datetime == max(dl_datetime)], by = person]
+
+  f <- latest_dt[["full_filepath"]]
+
+  # Parse and bind all latest jsons
+  file_dt <- data.table::rbindlist(   # bind as data.table
+    out <- RcppSimdJson::fload(f, # use super-fast RcppSimdJson parser
+                               empty_array = data.frame(),   # define what to do with empty observations
+                               empty_object = data.frame()) |>
+      purrr::map2(c("result"), `[[`) |>  # extract "result" element from parsed json list
+      purrr::map2(c("posts"), `[[`),     # extract "posts"
+    use.names = TRUE,
+    fill = TRUE,
+    idcol = "file"   # stores the filename
+  )
+
+  return(file_dt)
+
+}

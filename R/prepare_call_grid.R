@@ -82,7 +82,6 @@ create_filename <- function(df,
 #' df <- data.frame(handle = c("herbertkickl", NA, "wernerkogler", "wernerkogler"))
 #' drop_redundant(df, handle_var = "handle")
 #'
-#' @import dplyr
 #' @export
 drop_redundant <- function(df,
                            handle_var = NULL){
