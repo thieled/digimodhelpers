@@ -22,5 +22,5 @@ Imports:
     textclean,
     tibble
 Remotes: 
-    JBGruber/crowdtangler
+    JBGruber/crowdtangler,
     thieled/fleece
