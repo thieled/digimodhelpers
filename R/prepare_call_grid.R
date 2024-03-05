@@ -102,21 +102,25 @@ drop_redundant <- function(df,
 
 
 
-
-
-#' Slice Timeframes into Intervals
+#' Slice Timeframes
 #'
-#' This function slices timeframes into intervals specified by the user.
+#' Generate a sequence of timeframes based on specified start and end dates.
 #'
-#' @param start_date A character or Date object indicating the starting date of the timeframe.
-#'                   If NULL, it defaults to 1 week before today.
-#' @param end_date A character or Date object indicating the ending date of the timeframe.
-#'                 If NULL, it defaults to today.
-#' @param unit A character vector specifying the unit of the time intervals.
-#'             Options include "day", "week", "month", "quarter", and "year". Default is "day".
+#' @param start_date The starting date for the sequence of timeframes. Default is NULL.
+#' @param end_date The ending date for the sequence of timeframes. Default is NULL.
+#' @param unit The time unit for slicing the timeframes: "day", "week", "month", "quarter", "year". Default is "day".
 #'
-#' @return A data frame containing sliced timeframes with start and end dates,
-#'         along with corresponding start and end datetimes.
+#' @return A data frame containing the sliced timeframes with columns:
+#'   \itemize{
+#'     \item \code{start_date}: The start date of each timeframe.
+#'     \item \code{start_datetime}: The start datetime of each timeframe in ISO 8601 format.
+#'     \item \code{end_date}: The end date of each timeframe.
+#'     \item \code{end_datetime}: The end datetime of each timeframe in ISO 8601 format.
+#'   }
+#'
+#' @details This function generates a sequence of timeframes based on the specified start and end dates.
+#' If start_date or end_date is not provided, default values are used. If end_date is in the future,
+#' it is replaced by the current date. If start_date is after end_date, it is adjusted accordingly.
 #'
 #' @examples
 #' slice_timeframes(start_date = "2023-01-01", end_date = "2023-12-31", unit = "month")
@@ -168,6 +172,11 @@ slice_timeframes <- function(start_date = NULL,
   start_datetime <- start_days |> lubridate::as_datetime()  |> lubridate::format_ISO8601() # set 00h00m00s as start time; bring into the correct format
   end_datetime <- (lubridate::ceiling_date(lubridate::ymd(start_days), unit = unit) - lubridate::milliseconds(1)) |>  lubridate::format_ISO8601() # get last day of timeframes; set format
 
+  start_days
+  end_days <- lubridate::ceiling_date(lubridate::ymd(start_days), unit = unit)
+  end_days <- c(end_days[-length(end_days)], as.Date(end_date)) # replace last end date by end date set by user
+  end_datetime <- (end_days - lubridate::milliseconds(1)) |>  lubridate::format_ISO8601()
+
   # Replace last datetime with now if later than now
   if (end_datetime[which.max(lubridate::as_datetime(end_datetime))] > lubridate::now(tzone = "UTC")) {
     end_datetime[which.max(lubridate::as_datetime(end_datetime))] <- lubridate::now(tzone = "UTC") |> lubridate::format_ISO8601()
@@ -183,7 +192,6 @@ slice_timeframes <- function(start_date = NULL,
 
   return(df)
 }
-
 
 
 
