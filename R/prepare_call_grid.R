@@ -396,3 +396,152 @@ drop_existing <- function(path,
 
   return(grid)
 }
+
+
+
+
+#' Create Update Grid
+#'
+#' This function generates an update grid for various platforms based on provided parameters.
+#'
+#' @param df The data frame containing relevant information for creating the update grid.
+#' @param platform A character vector specifying the platforms to include in the update grid.
+#'   Valid values are "fb" (Facebook), "ig" (Instagram), "tt" (TikTok), "yt" (YouTube), "tg" (Telegram), "bc" (BitChute), and "bs" (BitScope).
+#' @param country_var The variable in the data frame representing country information.
+#' @param party_var The variable in the data frame representing party information.
+#' @param name_var The variable in the data frame representing name information.
+#' @param filename_var The variable in the data frame representing filename information.
+#' @param handle_var The variable in the data frame representing handle information.
+#' @param start_date The start date for the update grid.
+#' @param end_date The end date for the update grid.
+#' @param name_sep The separator used in constructing filenames.
+#' @param lowercase Logical indicating whether filenames should be converted to lowercase.
+#' @param replace_non_ascii Logical indicating whether non-ASCII characters should be replaced in filenames.
+#' @param filename_sep The separator used in filenames.
+#' @param sortBy The variable used for sorting the update grid.
+#' @param parse Logical indicating whether to parse the update grid.
+#' @param data_path The path to the data.
+#' @param count The count for the update grid.
+#' @param drop_existing Logical indicating whether to drop existing files.
+#'
+#' @return A data frame containing the generated update grid.
+#'
+#' @details This function generates an update grid for specified platforms using the provided parameters.
+#' It first finds the latest stored files, renames variables, merges timeframes, adds time information to filenames,
+#' and creates the update grid based on the specified parameters.
+#'
+#' @export
+create_update_grid <- function(df = df,
+                               platform = c("fb", "ig", "tt", "yt", "tg", "bc", "bs"),
+                               country_var = NULL,
+                               party_var = NULL,
+                               name_var = NULL,
+                               filename_var = NULL,
+                               handle_var = NULL,
+                               start_date = NULL,
+                               end_date = NULL,
+                               name_sep = "-",
+                               lowercase = TRUE,
+                               replace_non_ascii = TRUE,
+                               filename_sep = "_",
+                               sortBy = "date",
+                               parse = TRUE,
+                               data_path = NULL,
+                               count = Inf,
+                               drop_existing = FALSE
+) {
+
+  # Find latest stored files
+  latest_dt <- find_latest(data_path)
+
+  # Rename variables
+  data.table::setnames(latest_dt, "account_handle", handle_var)
+  data.table::setnames(latest_dt, "date", "start_date")
+  # Set now as end date, and latest found date as start_date, format into right format
+  latest_dt[, start_datetime := start_date |> lubridate::format_ISO8601()]
+  latest_dt[, end_datetime := lubridate::now() |> lubridate::format_ISO8601()]
+
+  keep_cols <- colnames(latest_dt)[colnames(latest_dt) %in% c(handle_var,
+                                                              "start_datetime",
+                                                              "end_datetime")]
+  latest_dt <- latest_dt[, keep_cols, with = FALSE]
+  latest_df <- tibble::as_tibble(latest_dt)
+
+
+  # Prepare handle df
+  handle_df <- drop_redundant(df = df, handle_var = handle_var)
+
+  # Prepare filename in handle_df
+  handle_df <- create_filename(df = handle_df,
+                               platform = platform,
+                               country_var = country_var,
+                               party_var = party_var,
+                               name_var = name_var,
+                               filename_var = filename_var,
+                               name_sep = name_sep,
+                               lowercase = lowercase,
+                               replace_non_ascii = replace_non_ascii,
+                               filename_sep = filename_sep
+  )
+
+  # Merge timeframes
+  grid_df <- dplyr::left_join(handle_df,
+                       latest_df)
+
+
+  # Replace empty start_datetime and end_dtatetime
+  grid_df <- grid_df |> dplyr::mutate(start_datetime = ifelse(is.na(start_datetime),
+                                                              lubridate::as_datetime(start_date) |> lubridate::format_ISO8601(),
+                                                              start_datetime),
+                                      end_datetime = ifelse(is.na(end_datetime),
+                                                            lubridate::now() |> lubridate::format_ISO8601(),
+                                                            end_datetime)
+  )
+
+  # Add time info to filename
+  grid_df[[filename_var]] <-  paste0(
+    grid_df[[filename_var]],
+    "_FR_",
+    sub("\\:", "m", sub("\\:", "h", grid_df[["start_datetime"]])),
+    "_TO_",
+    sub("\\:", "m", sub("\\:", "h", grid_df[["end_datetime"]])),
+    "_DL"
+  )
+
+
+  # Replace data path if empty
+  if(is.null(data_path)) data_path <- "./data"
+
+
+  # # Create crowdtangle grid
+  if(platform %in% c("fb", "ig")){
+
+    grid_df <- within(grid_df, {
+      accounts <- grid_df[[handle_var]]
+      start <- grid_df[["start_datetime"]]
+      end <- grid_df[["end_datetime"]]
+      filename <- grid_df[[filename_var]]
+      count <- count
+      sortBy <- sortBy
+      parse <- parse
+      data <- data_path
+    })
+
+    # Reordering columns
+    grid_df <- grid_df[, c("accounts", "start", "end", "filename", "count", "sortBy", "parse", "data")]
+
+  }
+
+
+  if(drop_existing==TRUE){
+
+    grid_df <-  drop_existing(path = data_path,
+                              grid = grid_df,
+                              filename_var = filename_var)
+
+  }
+
+  return(grid_df)
+}
+
+

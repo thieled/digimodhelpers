@@ -2,7 +2,7 @@
 % Please edit documentation in R/prepare_call_grid.R
 \name{slice_timeframes}
 \alias{slice_timeframes}
-\title{Slice Timeframes into Intervals}
+\title{Slice Timeframes}
 \usage{
 slice_timeframes(
   start_date = NULL,
@@ -11,21 +11,28 @@ slice_timeframes(
 )
 }
 \arguments{
-\item{start_date}{A character or Date object indicating the starting date of the timeframe.
-If NULL, it defaults to 1 week before today.}
+\item{start_date}{The starting date for the sequence of timeframes. Default is NULL.}
 
-\item{end_date}{A character or Date object indicating the ending date of the timeframe.
-If NULL, it defaults to today.}
+\item{end_date}{The ending date for the sequence of timeframes. Default is NULL.}
 
-\item{unit}{A character vector specifying the unit of the time intervals.
-Options include "day", "week", "month", "quarter", and "year". Default is "day".}
+\item{unit}{The time unit for slicing the timeframes: "day", "week", "month", "quarter", "year". Default is "day".}
 }
 \value{
-A data frame containing sliced timeframes with start and end dates,
-along with corresponding start and end datetimes.
+A data frame containing the sliced timeframes with columns:
+\itemize{
+\item \code{start_date}: The start date of each timeframe.
+\item \code{start_datetime}: The start datetime of each timeframe in ISO 8601 format.
+\item \code{end_date}: The end date of each timeframe.
+\item \code{end_datetime}: The end datetime of each timeframe in ISO 8601 format.
+}
 }
 \description{
-This function slices timeframes into intervals specified by the user.
+Generate a sequence of timeframes based on specified start and end dates.
+}
+\details{
+This function generates a sequence of timeframes based on the specified start and end dates.
+If start_date or end_date is not provided, default values are used. If end_date is in the future,
+it is replaced by the current date. If start_date is after end_date, it is adjusted accordingly.
 }
 \examples{
 slice_timeframes(start_date = "2023-01-01", end_date = "2023-12-31", unit = "month")

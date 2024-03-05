@@ -2,5 +2,8 @@
 utils::globalVariables(c("person",
                          "dl_datetime",
                          "to_datetime",
-                         ".data"))
+                         ".data",
+                         "start_datetime",
+                         "end_datetime",
+                         "account_handle"))
 
