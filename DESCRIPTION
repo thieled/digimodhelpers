@@ -8,7 +8,7 @@ Description: What the package does (one paragraph).
 License: CC0
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1
 Imports: 
     crowdtangler (>= 0.0.1.9000),
     fleece,
@@ -20,7 +20,10 @@ Imports:
     RcppSimdJson,
     stringr,
     textclean,
-    tibble
+    tibble,
+    tuber (>= 0.9.9),
+    plyr
 Remotes: 
     JBGruber/crowdtangler,
-    thieled/fleece
+    thieled/fleece,
+    gojiplus/tuber
