@@ -22,7 +22,8 @@ Imports:
     textclean,
     tibble,
     tuber (>= 0.9.9),
-    plyr
+    plyr,
+    pbapply
 Remotes: 
     JBGruber/crowdtangler,
     thieled/fleece,

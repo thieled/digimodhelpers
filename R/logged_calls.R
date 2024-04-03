@@ -19,9 +19,7 @@ call_log_ct <- function(grid_df,
                         show_notes = TRUE,
                         compact = FALSE,
                         progress_bar = TRUE,
-                        return_results = TRUE
-) {
-
+                        return_results = TRUE) {
   # Define log file
   now <- format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
   dir.create(file.path(grid_df$data[[1]], "/log"), showWarnings = FALSE)
@@ -40,50 +38,57 @@ call_log_ct <- function(grid_df,
                           sortBy,
                           parse,
                           data) {
-
     # Log row information
-    logger::log_info(paste0("Calling CT: Account - ", accounts, ", Start - ",
-                    start, ", End - ", end, " Filepath - ", data, "/", filename ))
+    logger::log_info(paste0(
+      "Calling CT: Account - ", accounts, ", Start - ",
+      start, ", End - ", end, " Filepath - ", data, "/", filename
+    ))
 
-    tryCatch({
-      # Call the API function crowdtangler::ct_posts
-      result <- crowdtangler::ct_posts(accounts = accounts,
-                                       start = start,
-                                       end = end,
-                                       filename = filename,
-                                       count = count,
-                                       sortBy = sortBy,
-                                       parse = parse,
-                                       data = data)
+    tryCatch(
+      {
+        # Call the API function crowdtangler::ct_posts
+        result <- crowdtangler::ct_posts(
+          accounts = accounts,
+          start = start,
+          end = end,
+          filename = filename,
+          count = count,
+          sortBy = sortBy,
+          parse = parse,
+          data = data
+        )
 
-      if(parse) {
-        logger::log_info(paste("Posts fetched:", length(result)))
+        if (parse) {
+          logger::log_info(paste("Posts fetched:", length(result)))
+        }
+
+        return(result)
+      },
+      error = function(e) {
+        # Log errors
+        logger::log_error(paste("Error in:", filename, "Message:", e$message))
+        # Return NULL in case of error
+        return(NULL)
+      },
+      warning = function(w) {
+        logger::log_warn(paste("Warning in", filename, "Message:", w$message))
+        return(NULL)
       }
-
-      return(result)
-
-    }, error = function(e) {
-      # Log errors
-      logger::log_error(paste("Error in:", filename, "Message:", e$message))
-      # Return NULL in case of error
-      return(NULL)
-    }, warning = function(w) {
-      logger::log_warn(paste("Warning in", filename, "Message:", w$message))
-      return(NULL)
-    }
     )
   }
 
   # Use purrr::pmap to iterate over the rows of the grid
-  tryCatch({
-    results <- purrr::pmap(grid_df, process_row, .progress = progress_bar)
-    return(results)
-  }, error = function(e) {
-    # Log errors
-    logger::log_error(paste("Error in calling purrr::pmap. Message:", e$message))
-    # Return NULL in case of error
-    return(NULL)
-  }
+  tryCatch(
+    {
+      results <- purrr::pmap(grid_df, process_row, .progress = progress_bar)
+      return(results)
+    },
+    error = function(e) {
+      # Log errors
+      logger::log_error(paste("Error in calling purrr::pmap. Message:", e$message))
+      # Return NULL in case of error
+      return(NULL)
+    }
   )
 
   # Close the logging

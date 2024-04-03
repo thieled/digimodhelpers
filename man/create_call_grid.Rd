@@ -87,15 +87,17 @@ df <- tibble::tribble(
   "at", "övp", "TBD", NA,
   "at", "Grüne", "Werner Kogler", "wernerkogler"
 )
-create_call_grid(df = df,
-                 platform = "fb",
-                 country_var = "country",
-                 party_var = "party",
-                 name_var = "name",
-                 handle_var = "handle",
-                 filename_var = "filename",
-                 start_date = "2023-08-25",
-                 end_date = "2024-01-24",
-                 unit = "quarter")
+create_call_grid(
+  df = df,
+  platform = "fb",
+  country_var = "country",
+  party_var = "party",
+  name_var = "name",
+  handle_var = "handle",
+  filename_var = "filename",
+  start_date = "2023-08-25",
+  end_date = "2024-01-24",
+  unit = "quarter"
+)
 
 }

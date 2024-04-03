@@ -45,15 +45,18 @@ The input data frame \code{df} with an additional column containing constructed 
 This function constructs filenames for social media data collection based on specified parameters.
 }
 \examples{
-df <- data.frame(country = c("USA", "UK", "Germany"),
-                 party = c("Democrat", "Republican", "Green"),
-                 name = c("Joe Biden", "Donald Trump", "Angela Merkel"))
+df <- data.frame(
+  country = c("USA", "UK", "Germany"),
+  party = c("Democrat", "Republican", "Green"),
+  name = c("Joe Biden", "Donald Trump", "Angela Merkel")
+)
 
 create_filename(df,
-platform = "fb",
-country_var = "country",
-party_var = "party",
-name_var = "name",
-filename_var = "filename")
+  platform = "fb",
+  country_var = "country",
+  party_var = "party",
+  name_var = "name",
+  filename_var = "filename"
+)
 
 }

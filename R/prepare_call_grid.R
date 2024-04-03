@@ -1,4 +1,3 @@
-
 #' Create Filenames for Social Media Data Collection
 #'
 #' This function constructs filenames for social media data collection based on specified parameters.
@@ -17,16 +16,19 @@
 #' @return The input data frame \code{df} with an additional column containing constructed filenames.
 #'
 #' @examples
-#' df <- data.frame(country = c("USA", "UK", "Germany"),
-#'                  party = c("Democrat", "Republican", "Green"),
-#'                  name = c("Joe Biden", "Donald Trump", "Angela Merkel"))
+#' df <- data.frame(
+#'   country = c("USA", "UK", "Germany"),
+#'   party = c("Democrat", "Republican", "Green"),
+#'   name = c("Joe Biden", "Donald Trump", "Angela Merkel")
+#' )
 #'
 #' create_filename(df,
-#' platform = "fb",
-#' country_var = "country",
-#' party_var = "party",
-#' name_var = "name",
-#' filename_var = "filename")
+#'   platform = "fb",
+#'   country_var = "country",
+#'   party_var = "party",
+#'   name_var = "name",
+#'   filename_var = "filename"
+#' )
 #'
 #' @export
 create_filename <- function(df,
@@ -38,32 +40,27 @@ create_filename <- function(df,
                             name_sep = "-",
                             lowercase = T,
                             replace_non_ascii = T,
-                            filename_sep = "_"
-){
-
+                            filename_sep = "_") {
   # Error messages
   name_index <- match(name_var, names(df))
-  if (is.null(name_var)||is.na(name_index))
+  if (is.null(name_var) || is.na(name_index)) {
     stop("name_var column not found or invalid")
+  }
 
   # Create filename
-  df[[filename_var]] <-  paste(
+  df[[filename_var]] <- paste(
 
     platform,
+    if (lowercase == T) tolower(if (replace_non_ascii == T) textclean::replace_non_ascii(if (!is.null(country_var)) df[[country_var]] else "")), # country
 
-    if(lowercase == T) tolower( if(replace_non_ascii == T) textclean::replace_non_ascii( if(!is.null(country_var)) df[[country_var]] else "") ), # country
+    if (lowercase == T) tolower(if (replace_non_ascii == T) textclean::replace_non_ascii(if (!is.null(party_var)) gsub("[^[:alnum:]]", "", df[[party_var]]) else "")), # party
 
-    if(lowercase == T) tolower( if(replace_non_ascii == T) textclean::replace_non_ascii( if(!is.null(party_var)) gsub("[^[:alnum:]]", "", df[[party_var]]) else "") ), # party
-
-    if(lowercase == T) tolower( if(replace_non_ascii == T) textclean::replace_non_ascii( if(!is.null(name_var)) gsub("[^[:alnum:]]", name_sep, df[[name_var]]) else "") ), # name variable
-
+    if (lowercase == T) tolower(if (replace_non_ascii == T) textclean::replace_non_ascii(if (!is.null(name_var)) gsub("[^[:alnum:]]", name_sep, df[[name_var]]) else "")), # name variable
     sep = filename_sep
-
   )
 
 
   return(df)
-
 }
 
 
@@ -84,12 +81,12 @@ create_filename <- function(df,
 #'
 #' @export
 drop_redundant <- function(df,
-                           handle_var = NULL){
-
+                           handle_var = NULL) {
   # Error messages
   handle_index <- match(handle_var, names(df))
-  if (is.null(handle_var) || is.na(handle_index))
+  if (is.null(handle_var) || is.na(handle_index)) {
     stop("handle_var column not found or invalid")
+  }
 
   # Drop missings and drop duplicates
   df <- df |>
@@ -97,7 +94,6 @@ drop_redundant <- function(df,
     dplyr::distinct(.data[[handle_var]], .keep_all = TRUE)
 
   return(df)
-
 }
 
 
@@ -129,7 +125,6 @@ drop_redundant <- function(df,
 slice_timeframes <- function(start_date = NULL,
                              end_date = NULL,
                              unit = c("day", "week", "month", "quarter", "year")) {
-
   # Check if end_date is empty
   if (is.null(end_date)) {
     end_date <- lubridate::today()
@@ -151,7 +146,7 @@ slice_timeframes <- function(start_date = NULL,
   }
 
   # Check if start_date is after end_date
-  if (as.Date(start_date) > end_date){
+  if (as.Date(start_date) > end_date) {
     start_date <- end_date - lubridate::days(7)
     cat("start_date is after end_date. replace by 1 week before end_date. \n")
   }
@@ -169,13 +164,15 @@ slice_timeframes <- function(start_date = NULL,
   seq_dates <- seq(start_date, end_date, by = unit) # generate sequence of dates
   start_days <- lubridate::ceiling_date(lubridate::ymd(seq_dates), unit = unit) # get round start day of next timeframe
   start_days <- c(as.Date(start_date), start_days[-length(start_days)]) # use original start date; remove last element
-  start_datetime <- start_days |> lubridate::as_datetime()  |> lubridate::format_ISO8601() # set 00h00m00s as start time; bring into the correct format
-  end_datetime <- (lubridate::ceiling_date(lubridate::ymd(start_days), unit = unit) - lubridate::milliseconds(1)) |>  lubridate::format_ISO8601() # get last day of timeframes; set format
+  start_datetime <- start_days |>
+    lubridate::as_datetime() |>
+    lubridate::format_ISO8601() # set 00h00m00s as start time; bring into the correct format
+  end_datetime <- (lubridate::ceiling_date(lubridate::ymd(start_days), unit = unit) - lubridate::milliseconds(1)) |> lubridate::format_ISO8601() # get last day of timeframes; set format
 
   start_days
   end_days <- lubridate::ceiling_date(lubridate::ymd(start_days), unit = unit)
   end_days <- c(end_days[-length(end_days)], as.Date(end_date)) # replace last end date by end date set by user
-  end_datetime <- (end_days - lubridate::milliseconds(1)) |>  lubridate::format_ISO8601()
+  end_datetime <- (end_days - lubridate::milliseconds(1)) |> lubridate::format_ISO8601()
 
   # Replace last datetime with now if later than now
   if (end_datetime[which.max(lubridate::as_datetime(end_datetime))] > lubridate::now(tzone = "UTC")) {
@@ -184,10 +181,11 @@ slice_timeframes <- function(start_date = NULL,
 
   end_days <- lubridate::as_date(lubridate::as_datetime(end_datetime))
 
-  df <- data.frame(start_date = start_days,
-                   start_datetime = start_datetime,
-                   end_date = end_days,
-                   end_datetime = end_datetime
+  df <- data.frame(
+    start_date = start_days,
+    start_datetime = start_datetime,
+    end_date = end_days,
+    end_datetime = end_datetime
   )
 
   return(df)
@@ -237,16 +235,18 @@ slice_timeframes <- function(start_date = NULL,
 #'   "at", "övp", "TBD", NA,
 #'   "at", "Grüne", "Werner Kogler", "wernerkogler"
 #' )
-#' create_call_grid(df = df,
-#'                  platform = "fb",
-#'                  country_var = "country",
-#'                  party_var = "party",
-#'                  name_var = "name",
-#'                  handle_var = "handle",
-#'                  filename_var = "filename",
-#'                  start_date = "2023-08-25",
-#'                  end_date = "2024-01-24",
-#'                  unit = "quarter")
+#' create_call_grid(
+#'   df = df,
+#'   platform = "fb",
+#'   country_var = "country",
+#'   party_var = "party",
+#'   name_var = "name",
+#'   handle_var = "handle",
+#'   filename_var = "filename",
+#'   start_date = "2023-08-25",
+#'   end_date = "2024-01-24",
+#'   unit = "quarter"
+#' )
 #'
 #' @export
 create_call_grid <- function(df = df,
@@ -267,35 +267,37 @@ create_call_grid <- function(df = df,
                              parse = TRUE,
                              data_path = NULL,
                              count = Inf,
-                             drop_existing = FALSE
-) {
-
-  time_df <- slice_timeframes(start_date = start_date,
-                              end_date = end_date,
-                              unit = unit
+                             drop_existing = FALSE) {
+  time_df <- slice_timeframes(
+    start_date = start_date,
+    end_date = end_date,
+    unit = unit
   )
 
   # Prepare handle df
   handle_df <- drop_redundant(df = df, handle_var = handle_var)
 
   # Prepare filename in handle_df
-  handle_df <- create_filename(df = handle_df,
-                               platform = platform,
-                               country_var = country_var,
-                               party_var = party_var,
-                               name_var = name_var,
-                               filename_var = filename_var,
-                               name_sep = name_sep,
-                               lowercase = lowercase,
-                               replace_non_ascii = replace_non_ascii,
-                               filename_sep = filename_sep
+  handle_df <- create_filename(
+    df = handle_df,
+    platform = platform,
+    country_var = country_var,
+    party_var = party_var,
+    name_var = name_var,
+    filename_var = filename_var,
+    name_sep = name_sep,
+    lowercase = lowercase,
+    replace_non_ascii = replace_non_ascii,
+    filename_sep = filename_sep
   )
 
   # Grid
 
   # Ensure that handle_var is named correctly
-  grid_list <- list(start_date = time_df[["start_date"]],
-                    handle_df[[handle_var]])
+  grid_list <- list(
+    start_date = time_df[["start_date"]],
+    handle_df[[handle_var]]
+  )
   names(grid_list)[[2]] <- handle_var
 
   # Get all combinations of timeframe and accounts
@@ -304,7 +306,7 @@ create_call_grid <- function(df = df,
     dplyr::left_join(handle_df)
 
   # Add time info to filename
-  grid_df[[filename_var]] <-  paste0(
+  grid_df[[filename_var]] <- paste0(
     grid_df[[filename_var]],
     "_FR_",
     sub("\\:", "m", sub("\\:", "h", grid_df[["start_datetime"]])),
@@ -315,12 +317,11 @@ create_call_grid <- function(df = df,
 
 
   # Replace data path if empty
-  if(is.null(data_path)) data_path <- "./data"
+  if (is.null(data_path)) data_path <- "./data"
 
 
   # # Create crowdtangle grid
-  if(platform %in% c("fb", "ig")){
-
+  if (platform %in% c("fb", "ig")) {
     grid_df <- within(grid_df, {
       accounts <- grid_df[[handle_var]]
       start <- grid_df[["start_datetime"]]
@@ -334,16 +335,15 @@ create_call_grid <- function(df = df,
 
     # Reordering columns
     grid_df <- grid_df[, c("accounts", "start", "end", "filename", "count", "sortBy", "parse", "data")]
-
   }
 
 
-  if(drop_existing==TRUE){
-
-    grid_df <-  drop_existing(path = data_path,
-                              grid = grid_df,
-                              filename_var = filename_var)
-
+  if (drop_existing == TRUE) {
+    grid_df <- drop_existing(
+      path = data_path,
+      grid = grid_df,
+      filename_var = filename_var
+    )
   }
 
 
@@ -448,9 +448,7 @@ create_update_grid <- function(df = df,
                                parse = TRUE,
                                data_path = NULL,
                                count = Inf,
-                               drop_existing = FALSE
-) {
-
+                               drop_existing = FALSE) {
   # Find latest stored files
   latest_dt <- find_latest(data_path)
 
@@ -461,9 +459,11 @@ create_update_grid <- function(df = df,
   latest_dt[, start_datetime := start_date |> lubridate::format_ISO8601()]
   latest_dt[, end_datetime := lubridate::now() |> lubridate::format_ISO8601()]
 
-  keep_cols <- colnames(latest_dt)[colnames(latest_dt) %in% c(handle_var,
-                                                              "start_datetime",
-                                                              "end_datetime")]
+  keep_cols <- colnames(latest_dt)[colnames(latest_dt) %in% c(
+    handle_var,
+    "start_datetime",
+    "end_datetime"
+  )]
   latest_dt <- latest_dt[, keep_cols, with = FALSE]
   latest_df <- tibble::as_tibble(latest_dt)
 
@@ -472,34 +472,40 @@ create_update_grid <- function(df = df,
   handle_df <- drop_redundant(df = df, handle_var = handle_var)
 
   # Prepare filename in handle_df
-  handle_df <- create_filename(df = handle_df,
-                               platform = platform,
-                               country_var = country_var,
-                               party_var = party_var,
-                               name_var = name_var,
-                               filename_var = filename_var,
-                               name_sep = name_sep,
-                               lowercase = lowercase,
-                               replace_non_ascii = replace_non_ascii,
-                               filename_sep = filename_sep
+  handle_df <- create_filename(
+    df = handle_df,
+    platform = platform,
+    country_var = country_var,
+    party_var = party_var,
+    name_var = name_var,
+    filename_var = filename_var,
+    name_sep = name_sep,
+    lowercase = lowercase,
+    replace_non_ascii = replace_non_ascii,
+    filename_sep = filename_sep
   )
 
   # Merge timeframes
-  grid_df <- dplyr::left_join(handle_df,
-                       latest_df)
+  grid_df <- dplyr::left_join(
+    handle_df,
+    latest_df
+  )
 
 
   # Replace empty start_datetime and end_dtatetime
-  grid_df <- grid_df |> dplyr::mutate(start_datetime = ifelse(is.na(start_datetime),
-                                                              lubridate::as_datetime(start_date) |> lubridate::format_ISO8601(),
-                                                              start_datetime),
-                                      end_datetime = ifelse(is.na(end_datetime),
-                                                            lubridate::now() |> lubridate::format_ISO8601(),
-                                                            end_datetime)
+  grid_df <- grid_df |> dplyr::mutate(
+    start_datetime = ifelse(is.na(start_datetime),
+      lubridate::as_datetime(start_date) |> lubridate::format_ISO8601(),
+      start_datetime
+    ),
+    end_datetime = ifelse(is.na(end_datetime),
+      lubridate::now() |> lubridate::format_ISO8601(),
+      end_datetime
+    )
   )
 
   # Add time info to filename
-  grid_df[[filename_var]] <-  paste0(
+  grid_df[[filename_var]] <- paste0(
     grid_df[[filename_var]],
     "_FR_",
     sub("\\:", "m", sub("\\:", "h", grid_df[["start_datetime"]])),
@@ -510,12 +516,11 @@ create_update_grid <- function(df = df,
 
 
   # Replace data path if empty
-  if(is.null(data_path)) data_path <- "./data"
+  if (is.null(data_path)) data_path <- "./data"
 
 
   # # Create crowdtangle grid
-  if(platform %in% c("fb", "ig")){
-
+  if (platform %in% c("fb", "ig")) {
     grid_df <- within(grid_df, {
       accounts <- grid_df[[handle_var]]
       start <- grid_df[["start_datetime"]]
@@ -529,19 +534,16 @@ create_update_grid <- function(df = df,
 
     # Reordering columns
     grid_df <- grid_df[, c("accounts", "start", "end", "filename", "count", "sortBy", "parse", "data")]
-
   }
 
 
-  if(drop_existing==TRUE){
-
-    grid_df <-  drop_existing(path = data_path,
-                              grid = grid_df,
-                              filename_var = filename_var)
-
+  if (drop_existing == TRUE) {
+    grid_df <- drop_existing(
+      path = data_path,
+      grid = grid_df,
+      filename_var = filename_var
+    )
   }
 
   return(grid_df)
 }
-
-

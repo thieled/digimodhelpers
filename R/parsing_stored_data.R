@@ -10,11 +10,9 @@
 #' @examples
 #' parse_filenames(path = ".")
 #'
-#'
 #' @export
 parse_filenames <- function(path,
                             recursive = FALSE) {
-
   if (dir.exists(path)[[1]]) {
     full_filepath <- list.files(
       path = path,
@@ -36,7 +34,7 @@ parse_filenames <- function(path,
   }
 
   # Drop the ct_pull prefix
-  cleaned_filename <-  gsub(".*ct_pull_", "", existing_jsons, perl = TRUE)
+  cleaned_filename <- gsub(".*ct_pull_", "", existing_jsons, perl = TRUE)
 
   # Platform
   plat <- stringr::str_extract(cleaned_filename, pattern = "^(fb|ig|tt|yt|tg|bc|bs)")
@@ -45,7 +43,7 @@ parse_filenames <- function(path,
   from_date <- lubridate::as_date(stringr::str_extract(cleaned_filename, pattern = "(?<=FR_)\\d{4}[:punct:]\\d{2}[:punct:]\\d{2}"))
 
   # From time
-  from_time <-  stringr::str_extract(cleaned_filename, pattern = "(?<=FR_\\d{4}[:punct:]\\d{2}[:punct:]\\d{2}[T|[:punct:]])\\d{2}[h|[:punct:]]\\d{2}[m|[:punct:]]\\d{2}") |>
+  from_time <- stringr::str_extract(cleaned_filename, pattern = "(?<=FR_\\d{4}[:punct:]\\d{2}[:punct:]\\d{2}[T|[:punct:]])\\d{2}[h|[:punct:]]\\d{2}[m|[:punct:]]\\d{2}") |>
     stringr::str_replace("[h|[:punct:]]", "\\:") |>
     stringr::str_replace_all("[m|[:punct:]]", "\\:")
 
@@ -58,7 +56,7 @@ parse_filenames <- function(path,
   to_date <- lubridate::as_date(stringr::str_extract(cleaned_filename, pattern = "(?<=TO_)\\d{4}[:punct:]\\d{2}[:punct:]\\d{2}"))
 
   # To time
-  to_time <-  stringr::str_extract(cleaned_filename, pattern = "(?<=TO_\\d{4}[:punct:]\\d{2}[:punct:]\\d{2}[T|[:punct:]])\\d{2}[h|[:punct:]]\\d{2}[m|[:punct:]]\\d{2}") |>
+  to_time <- stringr::str_extract(cleaned_filename, pattern = "(?<=TO_\\d{4}[:punct:]\\d{2}[:punct:]\\d{2}[T|[:punct:]])\\d{2}[h|[:punct:]]\\d{2}[m|[:punct:]]\\d{2}") |>
     stringr::str_replace("[h|[:punct:]]", "\\:") |>
     stringr::str_replace_all("[m|[:punct:]]", "\\:")
 
@@ -71,7 +69,7 @@ parse_filenames <- function(path,
   dl_date <- lubridate::as_date(stringr::str_extract(cleaned_filename, pattern = "(?<=DL_)\\d{4}[:punct:]\\d{2}[:punct:]\\d{2}"))
 
   # Download time
-  dl_time <-  stringr::str_extract(cleaned_filename, pattern = "(?<=DL_\\d{4}[:punct:]\\d{2}[:punct:]\\d{2}[T|[:punct:]])\\d{2}[h|[:punct:]]\\d{2}[m|[:punct:]]\\d{2}") |>
+  dl_time <- stringr::str_extract(cleaned_filename, pattern = "(?<=DL_\\d{4}[:punct:]\\d{2}[:punct:]\\d{2}[T|[:punct:]])\\d{2}[h|[:punct:]]\\d{2}[m|[:punct:]]\\d{2}") |>
     stringr::str_replace("[h|[:punct:]]", "\\:") |>
     stringr::str_replace_all("[m|[:punct:]]", "\\:")
 
@@ -119,8 +117,7 @@ parse_filenames <- function(path,
 #' @import data.table
 #'
 #' @export
-parse_latest <- function(path){
-
+parse_latest <- function(path) {
   # Call "parse filenames" function from digimodhelpers - extract info from json filenames
   files_df <- parse_filenames(path)
 
@@ -138,19 +135,19 @@ parse_latest <- function(path){
   f <- latest_dt[["full_filepath"]]
 
   # Parse and bind all latest jsons
-  file_dt <- data.table::rbindlist(   # bind as data.table
+  file_dt <- data.table::rbindlist( # bind as data.table
     out <- RcppSimdJson::fload(f, # use super-fast RcppSimdJson parser
-                               empty_array = data.frame(),   # define what to do with empty observations
-                               empty_object = data.frame()) |>
-      purrr::map2(c("result"), `[[`) |>  # extract "result" element from parsed json list
-      purrr::map2(c("posts"), `[[`),     # extract "posts"
+      empty_array = data.frame(), # define what to do with empty observations
+      empty_object = data.frame()
+    ) |>
+      purrr::map2(c("result"), `[[`) |> # extract "result" element from parsed json list
+      purrr::map2(c("posts"), `[[`), # extract "posts"
     use.names = TRUE,
     fill = TRUE,
-    idcol = "file"   # stores the filename
+    idcol = "file" # stores the filename
   )
 
   return(file_dt)
-
 }
 
 
@@ -180,9 +177,8 @@ parse_latest <- function(path){
 #' date for each account handle.
 #'
 #' @export
-find_latest <- function(path){
-
-  if(!dir.exists(path)){
+find_latest <- function(path) {
+  if (!dir.exists(path)) {
     stop("Path does not exist. Please provide a valid path.")
   }
 
@@ -190,9 +186,11 @@ find_latest <- function(path){
   dt <- digimodhelpers::parse_latest(path)
 
   # Drop unwanted columns
-  keep_cols <- colnames(dt)[colnames(dt) %in% c("file",
-                                                "account",
-                                                "date")]
+  keep_cols <- colnames(dt)[colnames(dt) %in% c(
+    "file",
+    "account",
+    "date"
+  )]
   dt <- dt[, keep_cols, with = FALSE]
 
   # unnest remaining columns
@@ -209,14 +207,14 @@ find_latest <- function(path){
   # Group by account_handle and select the row with the maximum date for each group
   result <- dt[, .SD[which.max(date)], by = account_handle]
 
-  keep_cols2 <- colnames(dt)[colnames(dt) %in% c("account_handle",
-                                                 "account_name",
-                                                 "account_pageAdminTopCountry",
-                                                 "date")]
+  keep_cols2 <- colnames(dt)[colnames(dt) %in% c(
+    "account_handle",
+    "account_name",
+    "account_pageAdminTopCountry",
+    "date"
+  )]
 
   result <- result[, keep_cols2, with = FALSE]
 
   return(result)
-
 }
-

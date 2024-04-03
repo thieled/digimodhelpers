@@ -33,17 +33,19 @@
 #'
 #' # Set API token via yt_oauth() first
 #'
-#' get_playlist_items(filter =
-#'                        c(playlist_id = "PLrEnWoR732-CN09YykVof2lxdI3MLOZda"))
-#' get_playlist_items(filter =
-#'                        c(playlist_id = "PL0fOlXVeVW9QMO3GoESky4yDgQfK2SsXN"),
-#'                        max_results = 51)
+#' get_playlist_items(
+#'   filter =
+#'     c(playlist_id = "PLrEnWoR732-CN09YykVof2lxdI3MLOZda")
+#' )
+#' get_playlist_items(
+#'   filter =
+#'     c(playlist_id = "PL0fOlXVeVW9QMO3GoESky4yDgQfK2SsXN"),
+#'   max_results = 51
+#' )
 #' }
-
 get_playlist_items_FIX <- function(filter = NULL, part = "contentDetails",
-                               max_results = 50, video_id = NULL,
-                               page_token = NULL, simplify = TRUE, ...) {
-
+                                   max_results = 50, video_id = NULL,
+                                   page_token = NULL, simplify = TRUE, ...) {
   # if (max_results < 0 || max_results > 50) {
   #   stop("max_results must be a value between 0 and 50.")
   # }
@@ -61,9 +63,11 @@ get_playlist_items_FIX <- function(filter = NULL, part = "contentDetails",
   filter_name <- translate_filter[names(filter)]
   names(filter) <- filter_name
 
-  querylist <- list(part = part,
-                    maxResults = max(min(max_results, 50), 1),
-                    pageToken = page_token, videoId = video_id)
+  querylist <- list(
+    part = part,
+    maxResults = max(min(max_results, 50), 1),
+    pageToken = page_token, videoId = video_id
+  )
   querylist <- c(querylist, filter)
 
   res <- tuber:::tuber_GET("playlistItems", querylist, ...)
@@ -97,5 +101,3 @@ get_playlist_items_FIX <- function(filter = NULL, part = "contentDetails",
 
   res
 }
-
-

@@ -50,11 +50,15 @@ Get Playlist Items
 
 # Set API token via yt_oauth() first
 
-get_playlist_items(filter =
-                       c(playlist_id = "PLrEnWoR732-CN09YykVof2lxdI3MLOZda"))
-get_playlist_items(filter =
-                       c(playlist_id = "PL0fOlXVeVW9QMO3GoESky4yDgQfK2SsXN"),
-                       max_results = 51)
+get_playlist_items(
+  filter =
+    c(playlist_id = "PLrEnWoR732-CN09YykVof2lxdI3MLOZda")
+)
+get_playlist_items(
+  filter =
+    c(playlist_id = "PL0fOlXVeVW9QMO3GoESky4yDgQfK2SsXN"),
+  max_results = 51
+)
 }
 }
 \references{

@@ -20,5 +20,4 @@ This function parses information stored in the filenames of JSON files containin
 \examples{
 parse_filenames(path = ".")
 
-
 }
