@@ -45,10 +45,10 @@ get_channel_vids <- function(
 
     playlist_items <- tryCatch(
       {
-        get_playlist_items_FIX(filter = list(playlist_id = playlist_id), max_results = max_results, simplify = TRUE)
+        tuber::get_playlist_items(filter = list(playlist_id = playlist_id), max_results = max_results, simplify = TRUE)
       },
       error = function(e) {
-        message(paste0("Error when calling 'get_playlist_items_FIX' on ", playlist_id, ": ", e))
+        message(paste0("Error when calling 'get_playlist_items' on ", playlist_id, ": ", e))
         # Return NULL in case of error
         return(NULL)
       }
@@ -87,7 +87,7 @@ get_channel_vids <- function(
           return(details)
         },
         error = function(e) {
-          message(paste0("Error when calling 'get_playlist_items_FIX' on ", vid_ids, ": ", e))
+          message(paste0("Error when calling 'get_playlist_items' on ", vid_ids, ": ", e))
           # Return NULL in case of error
           return(NULL)
         }
