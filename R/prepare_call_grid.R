@@ -320,7 +320,7 @@ create_call_grid <- function(df = df,
   if (is.null(data_path)) data_path <- "./data"
 
 
-  # # Create crowdtangle grid
+  # Create crowdtangle grid
   if (platform %in% c("fb", "ig")) {
     grid_df <- within(grid_df, {
       accounts <- grid_df[[handle_var]]
@@ -336,6 +336,22 @@ create_call_grid <- function(df = df,
     # Reordering columns
     grid_df <- grid_df[, c("accounts", "start", "end", "filename", "count", "sortBy", "parse", "data")]
   }
+
+
+  # Create yt grid
+  if (platform %in% c("yt")) {
+    grid_df <- within(grid_df, {
+      accounts <- grid_df[[handle_var]]
+      start <- grid_df[["start_datetime"]]
+      end <- grid_df[["end_datetime"]]
+      filename <- grid_df[[filename_var]]
+      data <- data_path
+    })
+
+    # Reordering columns
+    grid_df <- grid_df[, c("accounts", "start", "end", "filename", "data")]
+  }
+
 
 
   if (drop_existing == TRUE) {
@@ -534,6 +550,22 @@ create_update_grid <- function(df = df,
 
     # Reordering columns
     grid_df <- grid_df[, c("accounts", "start", "end", "filename", "count", "sortBy", "parse", "data")]
+  }
+
+
+
+  # Create yt grid
+  if (platform %in% c("yt")) {
+    grid_df <- within(grid_df, {
+      accounts <- grid_df[[handle_var]]
+      start <- grid_df[["start_datetime"]]
+      end <- grid_df[["end_datetime"]]
+      filename <- grid_df[[filename_var]]
+      data <- data_path
+    })
+
+    # Reordering columns
+    grid_df <- grid_df[, c("accounts", "start", "end", "filename", "data")]
   }
 
 
