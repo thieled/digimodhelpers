@@ -22,7 +22,8 @@ Imports:
     textclean,
     tibble,
     tuber (>= 0.9.9),
-    pbapply
+    pbapply,
+    jsonlite
 Remotes: 
     JBGruber/crowdtangler,
     thieled/fleece,

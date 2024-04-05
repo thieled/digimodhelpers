@@ -2,7 +2,7 @@
 % Please edit documentation in R/tuber_utils.R
 \name{get_channel_vids}
 \alias{get_channel_vids}
-\title{Get Video Details from YouTube Channel}
+\title{Retrieve video details from a YouTube channel}
 \usage{
 get_channel_vids(
   channel_id = channel_id,
@@ -11,33 +11,40 @@ get_channel_vids(
   max_results = Inf,
   part = c("contentDetails", "id", "liveStreamingDetails", "localizations", "player",
     "recordingDetails", "snippet", "statistics", "status", "topicDetails"),
+  auth = "key",
   ...
 )
 }
 \arguments{
-\item{channel_id}{The ID of the YouTube channel.}
+\item{channel_id}{The ID of the YouTube channel from which to retrieve video details.}
 
-\item{start_date}{The start date to filter videos. Defaults to NULL (no filtering).}
+\item{start_date}{Optional. The start date to filter videos by their published date. Defaults to NULL.}
 
-\item{end_date}{The end date to filter videos. Defaults to NULL (no filtering).}
+\item{end_date}{Optional. The end date to filter videos by their published date. Defaults to NULL.}
 
-\item{max_results}{Maximum number of results to retrieve. Defaults to Inf (retrieve all results).}
+\item{max_results}{Optional. Maximum number of video details to retrieve. Defaults to Inf.}
 
-\item{part}{A character vector specifying the parts of the resource to retrieve.
-Defaults to c("contentDetails", "id", "liveStreamingDetails", "localizations",
-"player", "recordingDetails", "snippet", "statistics", "status", "topicDetails").}
+\item{part}{Optional. A character vector specifying the parts that the API response will include. Possible values are: "contentDetails", "id", "liveStreamingDetails", "localizations", "player", "recordingDetails", "snippet", "statistics", "status", "topicDetails". Defaults to include all parts.}
 
-\item{...}{Additional arguments to be passed to underlying functions.}
+\item{auth}{Optional. The authentication method to be used. Defaults to "key".}
+
+\item{...}{Additional arguments passed to tuber_GET.}
 }
 \value{
-A list containing details of videos from the YouTube channel.
+A list containing video details.
 }
 \description{
-This function retrieves video details from a YouTube channel based on provided parameters.
+This function retrieves video details from a YouTube channel, including information such as video ID, title, description, and statistics.
+}
+\details{
+This function first retrieves channel resources using the \code{list_channel_resources} function from the 'tuber' package. It then extracts the playlist ID and retrieves playlist items using the \code{get_playlist_items} function. Finally, it retrieves details for each video using the \code{get_video_details} function. If no videos are found or an error occurs during the process, NULL is returned.
 }
 \examples{
 \dontrun{
-get_channel_vids(channel_id = "your_channel_id", start_date = "2023-01-01", end_date = "2023-12-31")
-}
+# Authenticate using API key
+tuber::yt_set_key("YOUR_API_KEY")
 
+# Retrieve video details for a channel
+videos <- get_channel_vids(channel_id = "CHANNEL_ID", max_results = 10)
+}
 }
