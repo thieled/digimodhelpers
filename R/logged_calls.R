@@ -218,6 +218,7 @@ call_log_yt <- function(grid_df,
         data,
         "/",
         filename,
+        "_",
         sub("\\:", "m", sub("\\:", "h", lubridate::now(tzone = "UTC") |> lubridate::format_ISO8601())),
         ".json"
       )
