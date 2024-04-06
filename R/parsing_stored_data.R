@@ -287,7 +287,7 @@ find_latest <- function(path) {
 
   # Convert "date" to POSIXct if it's not already
   if (!inherits(dt$published_time, "POSIXct")) {
-    dt[, published_time := as.POSIXct(published_time)]
+    dt[, published_time := as.POSIXct(lubridate::as_datetime(published_time, tz = "UTC"))]
   }
 
   # Order the data.table by date
