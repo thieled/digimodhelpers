@@ -105,21 +105,36 @@ parse_filenames <- function(path,
 
 
 
-
-#' Parse Latest JSON Files
+#' Parse Latest Data
 #'
-#' This function parses the latest JSON files based on the datetime information in the filenames.
+#' This function parses the latest data from specified file paths and extracts relevant information.
+#' It supports parsing data from different platforms like Instagram, Facebook, and YouTube.
 #'
-#' @param path A character string specifying the path where the JSON files are located.
+#' @param path The path to the directory containing the data files.
+#' @return A data.table containing the parsed data.
 #'
-#' @return A data.table containing parsed information from the latest JSON files.
+#' @details
+#' This function first calls the "parse filenames" function from the `digimodhelpers` package to extract information from JSON filenames.
+#' Then, it identifies the latest datetime based on end date and download date.
+#' Next, it parses the data from CrowdTangle or YouTube depending on the platform, and extracts required columns.
+#' Finally, it renames specific columns to standardize column names across platforms.
+#'
+#' @examples
+#' \dontrun{
+#' parsed_data <- parse_latest("/path/to/data/directory")
+#' }
 #'
 #' @import data.table
 #'
 #' @export
+#'
 parse_latest <- function(path) {
+
   # Call "parse filenames" function from digimodhelpers - extract info from json filenames
   files_df <- parse_filenames(path)
+
+  # Get filename from full path:
+  # files_df$file <- basename(files_df$full_filepath)
 
   # set datetime as datetime
   files_df[["to_datetime"]] <- lubridate::as_datetime(files_df[["to_datetime"]])
@@ -134,23 +149,116 @@ parse_latest <- function(path) {
   # extract the file paths
   f <- latest_dt[["full_filepath"]]
 
-  # Parse and bind all latest jsons
-  file_dt <- data.table::rbindlist( # bind as data.table
-    out <- RcppSimdJson::fload(f, # use super-fast RcppSimdJson parser
-      empty_array = data.frame(), # define what to do with empty observations
-      empty_object = data.frame()
-    ) |>
-      purrr::map2(c("result"), `[[`) |> # extract "result" element from parsed json list
-      purrr::map2(c("posts"), `[[`), # extract "posts"
-    use.names = TRUE,
-    fill = TRUE,
-    idcol = "file" # stores the filename
-  )
+
+  ###  Parse data from crowdtangle
+
+  if(files_df[["plat"]][[1]] %in% c("ig", "fb")){
+
+    # Parse and bind all latest jsons
+    file_dt <- data.table::rbindlist( # bind as data.table
+      out <- RcppSimdJson::fload(f, # use super-fast RcppSimdJson parser
+                                 empty_array = data.frame(), # define what to do with empty observations
+                                 empty_object = data.frame()
+      ) |>
+        purrr::map2(c("result"), `[[`) |> # extract "result" element from parsed json list
+        purrr::map2(c("posts"), `[[`), # extract "posts"
+      use.names = TRUE,
+      fill = TRUE,
+      idcol = "file" # stores the filename
+    )
+
+    # Unlist 'account' column
+    file_dt[, account := purrr::map(file_dt[, account], ~ unlist(.x))]
+
+    # Unnest 'account' column
+    file_dt <- tidytable::unnest_wider(file_dt,
+                                       account,
+                                       names_sep = "_",
+                                       names_repair = "minimal")
+
+    # Define columns to keep
+    keep_cols <- colnames(file_dt)[colnames(file_dt) %in% c(
+      "file",
+      "date",
+      "account_id",
+      "account_handle",
+      "platformId"
+    )]
+
+    # Drop unneccessary columns
+    file_dt <- file_dt[, keep_cols, with = FALSE]
+
+    names(file_dt)
+
+    # Columns to rename
+    old_names <- c(
+      "platformId",
+      "date"
+    )
+    new_names <- c("item_id",
+                   "published_time")
+
+    # Rename columns
+    data.table::setnames(file_dt, old_names, new_names)
+
+    ## Note for later: Download time info can be merged from filenames, stored in files_df
+    ## TO DO: Store dl time in .json? - Problem: Would need to change crowdtangler again
+
+  }
+
+
+  ### Parse data from youtube
+
+  if(files_df[["plat"]][[1]] %in% c("yt")){
+
+
+    # Parse and bind jsons
+    file_dt <- data.table::rbindlist(
+      RcppSimdJson::fload(f,
+                          empty_array = data.frame(),
+                          empty_object = data.frame()),
+      fill = TRUE, use.names = F, idcol = "file")
+
+    # Unlist 'items' column
+    file_dt[, items := purrr::map(file_dt[, items], ~ unlist(.x))]
+
+    # Unnest 'items' column
+    file_dt <- tidytable::unnest_wider(file_dt,
+                                       items,
+                                       names_sep = "_",
+                                       names_repair = "minimal")
+
+    # Define cols to keep
+    required_cols <- c(
+      "file",
+      "download_time",
+      "items_id",
+      "items_snippet.publishedAt",
+      "items_snippet.channelId"
+    )
+
+    keep_cols <- colnames(file_dt)[colnames(file_dt) %in% required_cols]
+
+    # Subset data.table
+    file_dt <- file_dt[, keep_cols, with = FALSE]
+
+    # Columns to rename
+    old_names <- c(
+      "items_id",
+      "items_snippet.publishedAt",
+      "items_snippet.channelId")
+    new_names <- c("item_id",
+                   "published_time",
+                   "account_id")
+
+    # Rename columns
+    data.table::setnames(file_dt, old_names, new_names)
+
+  }
+
 
   return(file_dt)
 }
-
-
 
 
 

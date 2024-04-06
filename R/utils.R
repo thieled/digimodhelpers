@@ -7,5 +7,7 @@ utils::globalVariables(c(
   "start_datetime",
   "end_datetime",
   "account_handle",
-  "contentDetails.videoPublishedAt"
+  "contentDetails.videoPublishedAt",
+  "account",
+  "items"
 ))

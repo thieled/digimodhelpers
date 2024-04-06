@@ -2,16 +2,29 @@
 % Please edit documentation in R/parsing_stored_data.R
 \name{parse_latest}
 \alias{parse_latest}
-\title{Parse Latest JSON Files}
+\title{Parse Latest Data}
 \usage{
 parse_latest(path)
 }
 \arguments{
-\item{path}{A character string specifying the path where the JSON files are located.}
+\item{path}{The path to the directory containing the data files.}
 }
 \value{
-A data.table containing parsed information from the latest JSON files.
+A data.table containing the parsed data.
 }
 \description{
-This function parses the latest JSON files based on the datetime information in the filenames.
+This function parses the latest data from specified file paths and extracts relevant information.
+It supports parsing data from different platforms like Instagram, Facebook, and YouTube.
+}
+\details{
+This function first calls the "parse filenames" function from the \code{digimodhelpers} package to extract information from JSON filenames.
+Then, it identifies the latest datetime based on end date and download date.
+Next, it parses the data from CrowdTangle or YouTube depending on the platform, and extracts required columns.
+Finally, it renames specific columns to standardize column names across platforms.
+}
+\examples{
+\dontrun{
+parsed_data <- parse_latest("/path/to/data/directory")
+}
+
 }

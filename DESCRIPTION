@@ -23,7 +23,8 @@ Imports:
     tibble,
     tuber (>= 0.9.9),
     pbapply,
-    jsonlite
+    jsonlite,
+    tidytable
 Remotes: 
     JBGruber/crowdtangler,
     thieled/fleece,
