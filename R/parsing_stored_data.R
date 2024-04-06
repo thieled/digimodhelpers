@@ -262,27 +262,19 @@ parse_latest <- function(path) {
 
 
 
-#' Find Latest Files for Each Account
+#' Find the latest file for each account in the specified path
 #'
-#' This function parses the latest files for each account within a specified directory path.
-#' It returns a data table containing information about the latest files for each account,
-#' including the file name, account details, and the date of the latest file.
+#' This function parses the latest files for each account found in the specified path.
+#' It returns a data.table containing the latest file for each unique account.
 #'
-#' @param path The directory path where the files are located.
-#'
-#' @return A data table containing information about the latest files for each account, including:
-#'   \itemize{
-#'     \item \code{account_handle}: The handle of the account.
-#'     \item \code{account_name}: The name of the account.
-#'     \item \code{account_pageAdminTopCountry}: The top country associated with the account.
-#'     \item \code{date}: The date of the latest file.
-#'   }
-#'
-#' @details This function first checks if the provided directory path exists. If it doesn't exist,
-#' the function stops and displays an error message. It then parses the latest files for each account,
-#' drops unwanted columns, unnests remaining columns, converts the date column to POSIXct if it's not
-#' already in that format, orders the data table by date, and finally selects the row with the maximum
-#' date for each account handle.
+#' @param path A character string specifying the directory path where the files are located.
+#' @return A data.table with columns representing account details and the latest file information.
+#' @export
+#' @examples
+#' \dontrun{
+#' # Provide a valid path to the function
+#' latest_files <- find_latest("/path/to/directory")
+#' }
 #'
 #' @export
 find_latest <- function(path) {
@@ -291,38 +283,19 @@ find_latest <- function(path) {
   }
 
   # Parse the latest files for each account
-  dt <- digimodhelpers::parse_latest(path)
-
-  # Drop unwanted columns
-  keep_cols <- colnames(dt)[colnames(dt) %in% c(
-    "file",
-    "account",
-    "date"
-  )]
-  dt <- dt[, keep_cols, with = FALSE]
-
-  # unnest remaining columns
-  dt <- fleece::unnest_recursively(dt)
+  dt <- parse_latest(path)
 
   # Convert "date" to POSIXct if it's not already
-  if (!inherits(dt$date, "POSIXct")) {
-    dt[, date := as.POSIXct(date)]
+  if (!inherits(dt$published_time, "POSIXct")) {
+    dt[, published_time := as.POSIXct(published_time)]
   }
 
   # Order the data.table by date
-  data.table::setorder(dt, account_handle, date)
+  data.table::setorder(dt, account_id, published_time)
 
   # Group by account_handle and select the row with the maximum date for each group
-  result <- dt[, .SD[which.max(date)], by = account_handle]
-
-  keep_cols2 <- colnames(dt)[colnames(dt) %in% c(
-    "account_handle",
-    "account_name",
-    "account_pageAdminTopCountry",
-    "date"
-  )]
-
-  result <- result[, keep_cols2, with = FALSE]
+  result <- dt[, .SD[which.max(published_time)], by = account_id]
 
   return(result)
+
 }

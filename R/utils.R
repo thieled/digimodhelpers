@@ -9,5 +9,7 @@ utils::globalVariables(c(
   "account_handle",
   "contentDetails.videoPublishedAt",
   "account",
+  "account_id",
+  "published_time",
   "items"
 ))
