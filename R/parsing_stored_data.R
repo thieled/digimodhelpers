@@ -176,6 +176,11 @@ parse_latest <- function(path) {
                                        names_sep = "_",
                                        names_repair = "minimal")
 
+    # Extract FB account ID from account_url;
+    # NOTE: the original 'account_id' variable seems to be specific to CT
+    file_dt[, account_id := gsub(".*\\/(\\d+)$", "\\1", account_url)]
+
+
     # Define columns to keep
     keep_cols <- colnames(file_dt)[colnames(file_dt) %in% c(
       "file",

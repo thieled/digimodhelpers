@@ -10,6 +10,7 @@ utils::globalVariables(c(
   "contentDetails.videoPublishedAt",
   "account",
   "account_id",
+  "account_url",
   "published_time",
   "items"
 ))
