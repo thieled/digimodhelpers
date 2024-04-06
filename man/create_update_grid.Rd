@@ -11,7 +11,7 @@ create_update_grid(
   party_var = NULL,
   name_var = NULL,
   filename_var = NULL,
-  handle_var = NULL,
+  account_var = NULL,
   start_date = NULL,
   end_date = NULL,
   name_sep = "-",
@@ -39,7 +39,7 @@ Valid values are "fb" (Facebook), "ig" (Instagram), "tt" (TikTok), "yt" (YouTube
 
 \item{filename_var}{The variable in the data frame representing filename information.}
 
-\item{handle_var}{The variable in the data frame representing handle information.}
+\item{account_var}{The variable in the data frame representing handle information.}
 
 \item{start_date}{The start date for the update grid.}
 

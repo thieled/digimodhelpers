@@ -71,27 +71,27 @@ create_filename <- function(df,
 #' This function removes redundant rows from a data frame based on a specified variable.
 #'
 #' @param df A data frame to be processed.
-#' @param handle_var A character string specifying the column name in the data frame based on which redundancy is checked. Default is NULL.
+#' @param account_var A character string specifying the column name in the data frame based on which redundancy is checked. Default is NULL.
 #'
 #' @return A data frame with redundant rows removed based on the specified variable.
 #'
 #' @examples
 #' df <- data.frame(handle = c("herbertkickl", NA, "wernerkogler", "wernerkogler"))
-#' drop_redundant(df, handle_var = "handle")
+#' drop_redundant(df, account_var = "handle")
 #'
 #' @export
 drop_redundant <- function(df,
-                           handle_var = NULL) {
+                           account_var = NULL) {
   # Error messages
-  handle_index <- match(handle_var, names(df))
-  if (is.null(handle_var) || is.na(handle_index)) {
-    stop("handle_var column not found or invalid")
+  account_index <- match(account_var, names(df))
+  if (is.null(account_var) || is.na(account_index)) {
+    stop("account_var column not found or invalid")
   }
 
   # Drop missings and drop duplicates
   df <- df |>
-    dplyr::filter(!is.na(.data[[handle_var]])) |>
-    dplyr::distinct(.data[[handle_var]], .keep_all = TRUE)
+    dplyr::filter(!is.na(.data[[account_var]])) |>
+    dplyr::distinct(.data[[account_var]], .keep_all = TRUE)
 
   return(df)
 }
@@ -195,7 +195,7 @@ slice_timeframes <- function(start_date = NULL,
 
 #' Create Call Grid for Social Media Data Collection
 #'
-#' This function constructs a grid of account handles and time frames to collect data from various APIs,
+#' This function constructs a grid of account handles or IDs and time frames to collect data from various APIs,
 #' especially useful for social media platforms.
 #'
 #' @param df A data frame containing the relevant data.
@@ -209,7 +209,7 @@ slice_timeframes <- function(start_date = NULL,
 #'                 Default is NULL.
 #' @param filename_var A character string specifying the column name in the data frame that contains filename information.
 #'                     Default is NULL.
-#' @param handle_var A character string specifying the column name in the data frame that contains handle information.
+#' @param account_var A character string specifying the column name in the data frame that contains the account specifier - ID or handle.
 #'                   Default is NULL.
 #' @param start_date A character or Date object indicating the starting date of the timeframe.
 #' @param end_date A character or Date object indicating the ending date of the timeframe.
@@ -226,7 +226,7 @@ slice_timeframes <- function(start_date = NULL,
 #'                  Default is NULL, which means the data will be stored in the current directory under the "data" folder.
 #' @param count An integer specifying the number of records to fetch. Default is Inf.
 #'
-#' @return A data frame containing a grid of account handles and time frames for data collection.
+#' @return A data frame containing a grid of account ids or handles and time frames for data collection.
 #'
 #' @examples
 #' df <- tibble::tribble(
@@ -241,7 +241,7 @@ slice_timeframes <- function(start_date = NULL,
 #'   country_var = "country",
 #'   party_var = "party",
 #'   name_var = "name",
-#'   handle_var = "handle",
+#'   account_var = "handle",
 #'   filename_var = "filename",
 #'   start_date = "2023-08-25",
 #'   end_date = "2024-01-24",
@@ -255,7 +255,7 @@ create_call_grid <- function(df = df,
                              party_var = NULL,
                              name_var = NULL,
                              filename_var = NULL,
-                             handle_var = NULL,
+                             account_var = NULL,
                              start_date = NULL,
                              end_date = NULL,
                              unit = "month",
@@ -275,11 +275,11 @@ create_call_grid <- function(df = df,
   )
 
   # Prepare handle df
-  handle_df <- drop_redundant(df = df, handle_var = handle_var)
+  account_df <- drop_redundant(df = df, account_var = account_var)
 
-  # Prepare filename in handle_df
-  handle_df <- create_filename(
-    df = handle_df,
+  # Prepare filename in account_df
+  account_df <- create_filename(
+    df = account_df,
     platform = platform,
     country_var = country_var,
     party_var = party_var,
@@ -293,17 +293,17 @@ create_call_grid <- function(df = df,
 
   # Grid
 
-  # Ensure that handle_var is named correctly
+  # Ensure that account_var is named correctly
   grid_list <- list(
     start_date = time_df[["start_date"]],
-    handle_df[[handle_var]]
+    account_df[[account_var]]
   )
-  names(grid_list)[[2]] <- handle_var
+  names(grid_list)[[2]] <- account_var
 
   # Get all combinations of timeframe and accounts
   grid_df <- expand.grid(grid_list) |>
     dplyr::left_join(time_df) |>
-    dplyr::left_join(handle_df)
+    dplyr::left_join(account_df)
 
   # Add time info to filename
   grid_df[[filename_var]] <- paste0(
@@ -323,7 +323,7 @@ create_call_grid <- function(df = df,
   # Create crowdtangle grid
   if (platform %in% c("fb", "ig")) {
     grid_df <- within(grid_df, {
-      accounts <- grid_df[[handle_var]]
+      accounts <- grid_df[[account_var]]
       start <- grid_df[["start_datetime"]]
       end <- grid_df[["end_datetime"]]
       filename <- grid_df[[filename_var]]
@@ -341,7 +341,7 @@ create_call_grid <- function(df = df,
   # Create yt grid
   if (platform %in% c("yt")) {
     grid_df <- within(grid_df, {
-      accounts <- grid_df[[handle_var]]
+      accounts <- grid_df[[account_var]]
       start <- grid_df[["start_datetime"]]
       end <- grid_df[["end_datetime"]]
       filename <- grid_df[[filename_var]]
@@ -427,7 +427,7 @@ drop_existing <- function(path,
 #' @param party_var The variable in the data frame representing party information.
 #' @param name_var The variable in the data frame representing name information.
 #' @param filename_var The variable in the data frame representing filename information.
-#' @param handle_var The variable in the data frame representing handle information.
+#' @param account_var The variable in the data frame representing handle information.
 #' @param start_date The start date for the update grid.
 #' @param end_date The end date for the update grid.
 #' @param name_sep The separator used in constructing filenames.
@@ -453,7 +453,7 @@ create_update_grid <- function(df = df,
                                party_var = NULL,
                                name_var = NULL,
                                filename_var = NULL,
-                               handle_var = NULL,
+                               account_var = NULL,
                                start_date = NULL,
                                end_date = NULL,
                                name_sep = "-",
@@ -469,14 +469,14 @@ create_update_grid <- function(df = df,
   latest_dt <- find_latest(data_path)
 
   # Rename variables
-  data.table::setnames(latest_dt, "account_handle", handle_var)
+  data.table::setnames(latest_dt, "account_handle", account_var)
   data.table::setnames(latest_dt, "date", "start_date")
   # Set now as end date, and latest found date as start_date, format into right format
   latest_dt[, start_datetime := start_date |> lubridate::format_ISO8601()]
   latest_dt[, end_datetime := lubridate::now() |> lubridate::format_ISO8601()]
 
   keep_cols <- colnames(latest_dt)[colnames(latest_dt) %in% c(
-    handle_var,
+    account_var,
     "start_datetime",
     "end_datetime"
   )]
@@ -485,11 +485,11 @@ create_update_grid <- function(df = df,
 
 
   # Prepare handle df
-  handle_df <- drop_redundant(df = df, handle_var = handle_var)
+  account_df <- drop_redundant(df = df, account_var = account_var)
 
-  # Prepare filename in handle_df
-  handle_df <- create_filename(
-    df = handle_df,
+  # Prepare filename in account_df
+  account_df <- create_filename(
+    df = account_df,
     platform = platform,
     country_var = country_var,
     party_var = party_var,
@@ -503,7 +503,7 @@ create_update_grid <- function(df = df,
 
   # Merge timeframes
   grid_df <- dplyr::left_join(
-    handle_df,
+    account_df,
     latest_df
   )
 
@@ -538,7 +538,7 @@ create_update_grid <- function(df = df,
   # # Create crowdtangle grid
   if (platform %in% c("fb", "ig")) {
     grid_df <- within(grid_df, {
-      accounts <- grid_df[[handle_var]]
+      accounts <- grid_df[[account_var]]
       start <- grid_df[["start_datetime"]]
       end <- grid_df[["end_datetime"]]
       filename <- grid_df[[filename_var]]
@@ -557,7 +557,7 @@ create_update_grid <- function(df = df,
   # Create yt grid
   if (platform %in% c("yt")) {
     grid_df <- within(grid_df, {
-      accounts <- grid_df[[handle_var]]
+      accounts <- grid_df[[account_var]]
       start <- grid_df[["start_datetime"]]
       end <- grid_df[["end_datetime"]]
       filename <- grid_df[[filename_var]]

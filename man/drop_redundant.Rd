@@ -4,12 +4,12 @@
 \alias{drop_redundant}
 \title{Drop Redundant Rows from a Data Frame}
 \usage{
-drop_redundant(df, handle_var = NULL)
+drop_redundant(df, account_var = NULL)
 }
 \arguments{
 \item{df}{A data frame to be processed.}
 
-\item{handle_var}{A character string specifying the column name in the data frame based on which redundancy is checked. Default is NULL.}
+\item{account_var}{A character string specifying the column name in the data frame based on which redundancy is checked. Default is NULL.}
 }
 \value{
 A data frame with redundant rows removed based on the specified variable.
@@ -19,6 +19,6 @@ This function removes redundant rows from a data frame based on a specified vari
 }
 \examples{
 df <- data.frame(handle = c("herbertkickl", NA, "wernerkogler", "wernerkogler"))
-drop_redundant(df, handle_var = "handle")
+drop_redundant(df, account_var = "handle")
 
 }
