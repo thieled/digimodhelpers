@@ -5,7 +5,7 @@
 \title{Create Crowdtangle List File from Account Dataframe}
 \usage{
 ct_create_list_file(
-  account_df,
+  df,
   account_var = NULL,
   drop_private = TRUE,
   doubts_var = NULL,
@@ -16,7 +16,7 @@ ct_create_list_file(
 )
 }
 \arguments{
-\item{account_df}{A dataframe containing account information.}
+\item{df}{A dataframe containing account information.}
 
 \item{account_var}{The name of the column containing the handles.}
 

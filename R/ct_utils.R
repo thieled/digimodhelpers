@@ -5,7 +5,7 @@
 #' to create a list.
 #'
 #'
-#' @param account_df A dataframe containing account information.
+#' @param df A dataframe containing account information.
 #' @param account_var The name of the column containing the handles.
 #' @param drop_private Logical, indicating whether to drop rows containing "private" or "profile" in the 'doubts_var' column. Default is TRUE.
 #' @param doubts_var Character. Name of a variable, containing written notes from manual annotation whether an account is a "profile" or "private".
@@ -17,7 +17,7 @@
 #' @return Subsetted dataframe with renamed columns.
 #' @export
 #'
-ct_create_list_file <- function(account_df,
+ct_create_list_file <- function(df,
                                 account_var = NULL,
                                 drop_private = TRUE,
                                 doubts_var = NULL,
@@ -26,12 +26,12 @@ ct_create_list_file <- function(account_df,
                                 platform = c("fb", "ig"),
                                 file = NULL) {
 
-  if(is.null(account_df) || is.null(account_var)){
-    stop(paste0("Please provide a 'account_df' including the FB/IG handles as 'account_var'."))
+  if(is.null(df) || is.null(account_var)){
+    stop(paste0("Please provide a 'df' including the FB/IG handles as 'account_var'."))
   }
 
   # drop redundant handles
-  account_df <- drop_redundant(df = account_df,
+  account_df <- drop_redundant(df = df,
                                account_var = account_var)
 
   # Remove rows where "private" or "profile" is mentioned in doubts column
