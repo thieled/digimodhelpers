@@ -8,6 +8,7 @@ ct_create_list_file(
   account_df,
   account_var = NULL,
   drop_private = TRUE,
+  doubts_var = NULL,
   list_name_var = NULL,
   list_name = NULL,
   platform = c("fb", "ig"),
@@ -19,7 +20,9 @@ ct_create_list_file(
 
 \item{account_var}{The name of the column containing the handles.}
 
-\item{drop_private}{Logical, indicating whether to drop rows containing "private" or "profile" in the doubts column. Default is TRUE.}
+\item{drop_private}{Logical, indicating whether to drop rows containing "private" or "profile" in the 'doubts_var' column. Default is TRUE.}
+
+\item{doubts_var}{Character. Name of a variable, containing written notes from manual annotation whether an account is a "profile" or "private".}
 
 \item{list_name_var}{Variable indicating the list names.}
 

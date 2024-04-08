@@ -7,7 +7,8 @@
 #'
 #' @param account_df A dataframe containing account information.
 #' @param account_var The name of the column containing the handles.
-#' @param drop_private Logical, indicating whether to drop rows containing "private" or "profile" in the doubts column. Default is TRUE.
+#' @param drop_private Logical, indicating whether to drop rows containing "private" or "profile" in the 'doubts_var' column. Default is TRUE.
+#' @param doubts_var Character. Name of a variable, containing written notes from manual annotation whether an account is a "profile" or "private".
 #' @param list_name_var Variable indicating the list names.
 #' @param list_name The name to be assigned to the "List" column.
 #' @param platform Platform name. Can be "fb" for Facebook or "ig" for Instagram.
@@ -19,6 +20,7 @@
 ct_create_list_file <- function(account_df,
                                 account_var = NULL,
                                 drop_private = TRUE,
+                                doubts_var = NULL,
                                 list_name_var = NULL,
                                 list_name = NULL,
                                 platform = c("fb", "ig"),
@@ -34,8 +36,14 @@ ct_create_list_file <- function(account_df,
 
   # Remove rows where "private" or "profile" is mentioned in doubts column
   if(drop_private){
-    account_df$drop <- grepl("private|profile", account_df[[doubts_var]], ignore.case = TRUE)
-    account_df <- account_df[!account_df$drop, ]
+
+    if(is.null(doubts_var)){
+      stop(paste0("Please specify a 'doubts_var', containing notes if a account is a private profile."))
+    }else{
+
+      account_df$drop <- grepl("private|profile", account_df[[doubts_var]], ignore.case = TRUE)
+      account_df <- account_df[!account_df$drop, ]
+    }
   }
 
   # Create platform URL prefix to account handles
