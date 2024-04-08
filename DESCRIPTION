@@ -23,7 +23,8 @@ Imports:
     tuber (>= 0.9.9),
     pbapply,
     jsonlite,
-    tidytable
+    tidytable,
+    readr
 Remotes: 
     JBGruber/crowdtangler,
     gojiplus/tuber

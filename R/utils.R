@@ -12,5 +12,6 @@ utils::globalVariables(c(
   "account_id",
   "account_url",
   "published_time",
-  "items"
+  "items",
+  "doubts_var"
 ))
