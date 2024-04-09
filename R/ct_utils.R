@@ -99,6 +99,7 @@ ct_create_list_file <- function(df,
 #'
 #' @return A dataframe containing the retrieved accounts.
 #'
+#' @export
 ct_getlistaccounts <- function(list = NULL,
                                token = NULL,
                                count = Inf) {
