@@ -333,7 +333,7 @@ create_call_grid <- function(df = df,
         stop("Please provide a variable 'fb_ct_list_id' in 'df' specifying the crowdtangle-list id.")
       }else{
         grid_df <- within(grid_df, {
-          ct_list <- grid_df[["fb_ct_list_id"]]
+          list <- grid_df[["fb_ct_list_id"]]
         })
       }
     }else{ ## i.e. if platform == "ig"
@@ -341,22 +341,22 @@ create_call_grid <- function(df = df,
         stop("Please provide a variable 'ig_ct_list_id' in 'df' specifying the crowdtangle-list id.")
       }else{
         grid_df <- within(grid_df, {
-          ct_list <- grid_df[["ig_ct_list_id"]]
+          list <- grid_df[["ig_ct_list_id"]]
         })
       }
     }
 
     # Drop observations where no ct_list is specified
 
-    n_missinglist <- length(unique(grid_df[is.na(grid_df$ct_list), ][[account_var]]))
+    n_missinglist <- length(unique(grid_df[is.na(grid_df$list), ][[account_var]]))
 
     if(n_missinglist > 0){
       warning(paste0("Some accounts do not include information about a Crowdtangle list. Dropping n = ", n_missinglist, " accounts."))
-      grid_df <- grid_df |> dplyr::filter(!is.na(ct_list))
+      grid_df <- grid_df |> dplyr::filter(!is.na(list))
     }
 
     # Reordering columns
-    grid_df <- grid_df[, c("accounts", "ct_list", "start", "end", "filename", "count", "sortBy", "parse", "data")]
+    grid_df <- grid_df[, c("accounts", "list", "start", "end", "filename", "count", "sortBy", "parse", "data")]
   }
 
 
@@ -593,7 +593,7 @@ create_update_grid <- function(df = df,
         stop("Please provide a variable 'fb_ct_list_id' in 'df' specifying the crowdtangle-list id.")
       }else{
         grid_df <- within(grid_df, {
-          ct_list <- grid_df[["fb_ct_list_id"]]
+          list <- grid_df[["fb_ct_list_id"]]
         })
       }
     }else{ ## i.e. if platform == "ig"
@@ -601,22 +601,22 @@ create_update_grid <- function(df = df,
         stop("Please provide a variable 'ig_ct_list_id' in 'df' specifying the crowdtangle-list id.")
       }else{
         grid_df <- within(grid_df, {
-          ct_list <- grid_df[["ig_ct_list_id"]]
+          list <- grid_df[["ig_ct_list_id"]]
         })
       }
     }
 
-    # Drop observations where no ct_list is specified
+    # Drop observations where no list is specified
 
-    n_missinglist <- length(unique(grid_df[is.na(grid_df$ct_list), ][[account_var]]))
+    n_missinglist <- length(unique(grid_df[is.na(grid_df$list), ][[account_var]]))
 
     if(n_missinglist > 0){
       warning(paste0("Some accounts do not include information about a Crowdtangle list. Dropping n = ", n_missinglist, " accounts."))
-      grid_df <- grid_df |> dplyr::filter(!is.na(ct_list))
+      grid_df <- grid_df |> dplyr::filter(!is.na(list))
     }
 
     # Reordering columns
-    grid_df <- grid_df[, c("accounts", "ct_list", "start", "end", "filename", "count", "sortBy", "parse", "data")]
+    grid_df <- grid_df[, c("accounts", "list", "start", "end", "filename", "count", "sortBy", "parse", "data")]
   }
 
 
