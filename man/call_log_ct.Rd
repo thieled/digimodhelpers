@@ -2,7 +2,7 @@
 % Please edit documentation in R/logged_calls.R
 \name{call_log_ct}
 \alias{call_log_ct}
-\title{Calls an API, logs the calls, warnings, and errors.}
+\title{Call Crowdtangle API and Log Results}
 \usage{
 call_log_ct(
   grid_df,
@@ -11,27 +11,36 @@ call_log_ct(
   show_notes = TRUE,
   compact = FALSE,
   progress_bar = TRUE,
-  return_results = TRUE
+  return_results = TRUE,
+  verbose = TRUE,
+  fb_token,
+  ig_token
 )
 }
 \arguments{
-\item{grid_df}{A data frame containing the parameters for the API calls.}
+\item{grid_df}{The grid dataframe containing information about the API calls to be made.}
 
-\item{traceback}{Logical indicating whether traceback information should be included in the log (default: FALSE).}
+\item{traceback}{Logical; indicates whether to show traceback in case of an error. Default is FALSE.}
 
-\item{autolog}{Logical indicating whether autolog information should be included in the log (default: TRUE).}
+\item{autolog}{Logical; indicates whether to start logging. Default is TRUE.}
 
-\item{show_notes}{Logical indicating whether notes should be included in the log (default: TRUE).}
+\item{show_notes}{Logical; indicates whether to show informational notes during logging. Default is TRUE.}
 
-\item{compact}{Logical indicating whether the log should be compacted (default: FALSE).}
+\item{compact}{Logical; indicates whether to use a compact logging format. Default is FALSE.}
 
-\item{progress_bar}{Logical indicating whether a progress bar should be displayed during processing (default: TRUE).}
+\item{progress_bar}{Logical; indicates whether to display a progress bar during API calls. Default is TRUE.}
 
-\item{return_results}{Logical indicating whether the results of the API calls should be returned (default: TRUE).}
+\item{return_results}{Logical; indicates whether to return the results of the API calls. Default is TRUE.}
+
+\item{verbose}{Logical; indicates whether to display verbose output during logging. Default is TRUE.}
+
+\item{fb_token}{The Facebook API token.}
+
+\item{ig_token}{The Instagram API token.}
 }
 \value{
-A list containing the results of the API calls for each row of the data frame.
+If return_results is TRUE, a list containing the results of the API calls.
 }
 \description{
-This function calls an API for each row of a given data frame and logs the calls, warnings, and errors.
+This function calls the Crowdtangle API for each row in the provided grid dataframe, logs the results, and optionally returns the results.
 }

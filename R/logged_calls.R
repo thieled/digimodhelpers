@@ -1,25 +1,33 @@
-#' Calls an API, logs the calls, warnings, and errors.
+#' Call Crowdtangle API and Log Results
 #'
-#' This function calls an API for each row of a given data frame and logs the calls, warnings, and errors.
+#' This function calls the Crowdtangle API for each row in the provided grid dataframe, logs the results, and optionally returns the results.
 #'
-#' @param grid_df A data frame containing the parameters for the API calls.
-#' @param traceback Logical indicating whether traceback information should be included in the log (default: FALSE).
-#' @param autolog Logical indicating whether autolog information should be included in the log (default: TRUE).
-#' @param show_notes Logical indicating whether notes should be included in the log (default: TRUE).
-#' @param compact Logical indicating whether the log should be compacted (default: FALSE).
-#' @param progress_bar Logical indicating whether a progress bar should be displayed during processing (default: TRUE).
-#' @param return_results Logical indicating whether the results of the API calls should be returned (default: TRUE).
+#' @param grid_df The grid dataframe containing information about the API calls to be made.
+#' @param traceback Logical; indicates whether to show traceback in case of an error. Default is FALSE.
+#' @param autolog Logical; indicates whether to start logging. Default is TRUE.
+#' @param show_notes Logical; indicates whether to show informational notes during logging. Default is TRUE.
+#' @param compact Logical; indicates whether to use a compact logging format. Default is FALSE.
+#' @param progress_bar Logical; indicates whether to display a progress bar during API calls. Default is TRUE.
+#' @param return_results Logical; indicates whether to return the results of the API calls. Default is TRUE.
+#' @param verbose Logical; indicates whether to display verbose output during logging. Default is TRUE.
+#' @param fb_token The Facebook API token.
+#' @param ig_token The Instagram API token.
 #'
-#' @return A list containing the results of the API calls for each row of the data frame.
+#' @return If return_results is TRUE, a list containing the results of the API calls.
 #'
 #' @export
+#'
 call_log_ct <- function(grid_df,
                         traceback = FALSE,
                         autolog = TRUE,
                         show_notes = TRUE,
                         compact = FALSE,
                         progress_bar = TRUE,
-                        return_results = TRUE) {
+                        return_results = TRUE,
+                        verbose = TRUE,
+                        fb_token,
+                        ig_token
+) {
   # Define log file
   now <- format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
   dir.create(file.path(grid_df$data[[1]], "/log"), showWarnings = FALSE)
@@ -28,9 +36,18 @@ call_log_ct <- function(grid_df,
   # Set up logging
   logger::log_appender(logger::appender_file(log_file))
   logger::log_info("Logging started.")
+  if(verbose) message("Logging started.")
+
+  # Force set facebook or instagram token
+  if(any(substr(grid_df$filename, 1, 2) == "fb")){
+    Sys.setenv(CROWDTANGLE_TOKEN = fb_token)
+  }else{
+    Sys.setenv(CROWDTANGLE_TOKEN = ig_token)
+  }
 
   # Define a function to handle each row of the grid
   process_row <- function(accounts,
+                          list,
                           start,
                           end,
                           filename,
@@ -40,8 +57,20 @@ call_log_ct <- function(grid_df,
                           data) {
     # Log row information
     logger::log_info(paste0(
-      "Calling CT: Account - ", accounts, ", Start - ",
-      start, ", End - ", end, " Filepath - ", data, "/", filename
+      "Calling CT: Account - ", accounts,
+      ", List - ", list,
+      ", Start - ", start,
+      ", End - ", end,
+      " Filepath - ", data,
+      "/", filename
+    ))
+    if(verbose) message(paste0(
+      "Calling CT: Account - ", accounts,
+      ", List - ", list,
+      ", Start - ", start,
+      ", End - ", end,
+      " Filepath - ", data,
+      "/", filename
     ))
 
     tryCatch(
@@ -49,6 +78,7 @@ call_log_ct <- function(grid_df,
         # Call the API function crowdtangler::ct_posts
         result <- crowdtangler::ct_posts(
           accounts = accounts,
+          list = list,
           start = start,
           end = end,
           filename = filename,
@@ -60,6 +90,7 @@ call_log_ct <- function(grid_df,
 
         if (parse) {
           logger::log_info(paste("Posts fetched:", length(result)))
+          if(verbose) message(paste("Posts fetched:", length(result)))
         }
 
         return(result)
@@ -67,35 +98,70 @@ call_log_ct <- function(grid_df,
       error = function(e) {
         # Log errors
         logger::log_error(paste("Error in:", filename, "Message:", e$message))
+        if(verbose) warning(paste("Error in:", filename, "Message:", e$message))
         # Return NULL in case of error
         return(NULL)
       },
       warning = function(w) {
         logger::log_warn(paste("Warning in", filename, "Message:", w$message))
+        if(verbose) warning(paste("Warning in", filename, "Message:", w$message))
         return(NULL)
       }
     )
   }
 
-  # Use purrr::pmap to iterate over the rows of the grid
-  tryCatch(
-    {
-      results <- purrr::pmap(grid_df, process_row, .progress = progress_bar)
-      return(results)
-    },
-    error = function(e) {
-      # Log errors
-      logger::log_error(paste("Error in calling purrr::pmap. Message:", e$message))
-      # Return NULL in case of error
-      return(NULL)
-    }
-  )
+  # Store token as variable in grid_df
+  # grid_df$token <- token
 
+  # Wrap function in safely
+  process_row_safe <- purrr::safely(process_row, otherwise = NULL)
+
+  # Use purrr::pmap to iterate over the rows of the grid
+  tryCatch({
+
+    results <- purrr::pmap(grid_df, .progress = progress_bar, function(...) {
+
+      result <- process_row_safe(...)
+
+      if (!is.null(result$error)) {
+        if(verbose){message(paste("Error in 'get_channel_vids.' Message:", result$error$message))}
+        logger::log_error(paste("Error in 'get_channel_vids.' Message:", result$error$message))
+      }
+
+      return(result$result) # Return the result portion of the list
+
+    })
+  }, error = function(e) {
+    # Log errors
+    if(verbose){message(paste("Error in calling 'purrr::pmap.' Message:", e$message))}
+    logger::log_error(paste("Error in calling 'purrr::pmap.' Message:", e$message))
+    # Return NULL in case of error
+    return(NULL)
+  })
+
+  # # Use purrr::pmap to iterate over the rows of the grid
+  # tryCatch(
+  #   {
+  #     results <- purrr::pmap(grid_df, process_row, .progress = progress_bar)
+  #     return(results)
+  #   },
+  #   error = function(e) {
+  #     # Log errors
+  #     logger::log_error(paste("Error in calling purrr::pmap. Message:", e$message))
+  #     if(verbose) warning(paste("Error in calling purrr::pmap. Message:", e$message))
+  #     # Return NULL in case of error
+  #     return(NULL)
+  #   }
+  # )
+  #
   # Close the logging
   logger::log_info("Logging completed.")
+  if(verbose) message("Logging completed.")
   logger::log_appender(NULL)
 
-  return(results)
+  if(return_results){
+    return(results)
+  }
 }
 
 
