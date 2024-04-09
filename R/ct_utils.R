@@ -159,6 +159,103 @@ ct_getlistaccounts <- function(list = NULL,
 
   out <- dplyr::bind_rows(out)
 
+  # Cheap fix for a bug in pagination handling that returns duplicates
+  out <- dplyr::distinct(out)
+
   return(out)
 }
+
+
+
+
+#' Get all accounts from Crowdtangle lists
+#'
+#' This function retrieves all accounts from Crowdtangle lists using the Crowdtangle API.
+#'
+#' @param token A character string specifying the Crowdtangle API token.
+#'
+#' @return A dataframe containing all retrieved accounts from Crowdtangle lists.
+#'
+#' @export
+#'
+ct_get_all_listaccounts <- function(token = NULL){
+
+  # Get lists
+  list_ids <- crowdtangler::ct_getlists(token = token)
+
+  # Use purrr::pmap to iterate over each list_id - safely
+  ct_getlistaccounts_safe <- purrr::safely(ct_getlistaccounts, otherwise = NULL)
+  results <- purrr::map(list_ids$id, .f = ct_getlistaccounts_safe, token = token, .progress = T)
+
+  if (!is.null(results$error)) {
+    warning(paste0("Error in 'ct_getlistaccounts':", results$error$message))
+  }
+
+  # Drop the "error" part.
+  results <- results |> purrr::map2(c("result"), `[[`)
+
+  # Set list_ids as names
+  names(results) <- list_ids$id
+
+  # Bind results
+  dt <- data.table::rbindlist(results, use.names = T, fill = T, idcol = "list_id")
+
+  return(dt)
+}
+
+
+
+
+
+
+
+#' Merge Crowdtangle list IDs with Account Dataframe
+#'
+#' This function merges Crowdtangle list IDs with an account dataframe based on account handles.
+#'
+#' @param acc_df A dataframe containing account information.
+#' @param token A character string specifying the Crowdtangle API token.
+#' @param handle_var The name of the variable containing account handles in the 'acc_df' dataframe.
+#'
+#' @return A dataframe with Crowdtangle list IDs merged with the original account dataframe.
+#'
+#' @export
+#'
+ct_merge_list_id <- function(acc_df,
+                             token,
+                             handle_var = NULL){
+
+  # Get all acconts in lists for token
+  list_accounts_df <- ct_get_all_listaccounts(token) |> dplyr::as_tibble()
+
+  # Set platform prefix for variable names
+  if(any(list_accounts_df$platform == "Facebook")){
+    plat <- "fb"
+  }else{
+    plat <- "ig"
+  }
+
+  # Subset
+  list_accounts_df <- list_accounts_df |> dplyr::select(handle,
+                                                        list_id,
+                                                        id)
+  # Rename handle_var
+  if(is.null(handle_var) || !is.character(handle_var)){
+    stop("Please specify 'handle_var' as character.")
+  }
+  names(list_accounts_df)[names(list_accounts_df) == "handle"] <- handle_var
+
+  # Rename list_id and id
+  names(list_accounts_df)[names(list_accounts_df) == "list_id"] <- paste0(plat, "_ct_", "list_id")
+  names(list_accounts_df)[names(list_accounts_df) == "id"] <- paste0(plat, "_ct_", "id")
+
+  # Merge dfs
+  acc_df_merged <- dplyr::left_join(acc_df,
+                                    list_accounts_df,
+                                    by = handle_var)
+
+  return(acc_df_merged)
+}
+
+
 
