@@ -128,7 +128,7 @@ slice_timeframes <- function(start_date = NULL,
   # Check if end_date is empty
   if (is.null(end_date)) {
     end_date <- lubridate::today()
-    cat("end_date is empty. replace by today, 00:00. \n")
+    message("end_date is empty. replace by today, 00:00. \n")
   }
 
   end_date <- as.Date(end_date)
@@ -136,19 +136,19 @@ slice_timeframes <- function(start_date = NULL,
   # Check if end_date is in the future
   if (end_date > lubridate::today()) {
     end_date <- lubridate::today()
-    cat("end_date is in the future or empty. replace by today, 00:00. \n")
+    message("end_date is in the future or empty. replace by today, 00:00. \n")
   }
 
   # Check if start_date is empty
   if (is.null(start_date)) {
     start_date <- lubridate::today() - lubridate::days(7)
-    cat("start_date is empty. replace by 1 week before today. \n")
+    message("start_date is empty. replace by 1 week before today. \n")
   }
 
   # Check if start_date is after end_date
   if (as.Date(start_date) > end_date) {
     start_date <- end_date - lubridate::days(7)
-    cat("start_date is after end_date. replace by 1 week before end_date. \n")
+    message("start_date is after end_date. replace by 1 week before end_date. \n")
   }
 
   # Set start date in Date format
@@ -169,10 +169,20 @@ slice_timeframes <- function(start_date = NULL,
     lubridate::format_ISO8601() # set 00h00m00s as start time; bring into the correct format
   end_datetime <- (lubridate::ceiling_date(lubridate::ymd(start_days), unit = unit) - lubridate::milliseconds(1)) |> lubridate::format_ISO8601() # get last day of timeframes; set format
 
-  start_days
+  # start_days
   end_days <- lubridate::ceiling_date(lubridate::ymd(start_days), unit = unit)
   end_days <- c(end_days[-length(end_days)], as.Date(end_date)) # replace last end date by end date set by user
   end_datetime <- (end_days - lubridate::milliseconds(1)) |> lubridate::format_ISO8601()
+
+
+  # Drop last pair if unit is "day"
+  if (unit == "day") {
+    # Drop the last element of 'start_datetime' and 'end_datetime'
+    start_datetime <- start_datetime[-length(start_datetime)]
+    start_days <- start_days[-length(start_days)]
+    end_datetime <- end_datetime[-length(end_datetime)]
+    end_days <- end_days[-length(end_days)]
+  }
 
   # Replace last datetime with now if later than now
   if (end_datetime[which.max(lubridate::as_datetime(end_datetime))] > lubridate::now(tzone = "UTC")) {
