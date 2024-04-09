@@ -24,7 +24,8 @@ Imports:
     pbapply,
     jsonlite,
     tidytable,
-    readr
+    readr,
+    httr
 Remotes: 
     JBGruber/crowdtangler,
     gojiplus/tuber

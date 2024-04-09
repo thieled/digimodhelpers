@@ -84,3 +84,80 @@ ct_create_list_file <- function(df,
 
   return(subset_df)
 }
+
+
+
+
+#' Get accounts from a Crowdtangle list
+#'
+#' This function retrieves accounts from a Crowdtangle list using the Crowdtangle API.
+#'
+#' @param list A character string specifying the ID of the Crowdtangle list.
+#' @param token A character string specifying the Crowdtangle API token. If not provided,
+#'  the token will be retrieved from the environment variable "CROWDTANGLE_TOKEN".
+#' @param count An integer specifying the maximum number of accounts to retrieve. Default is Inf.
+#'
+#' @return A dataframe containing the retrieved accounts.
+#'
+ct_getlistaccounts <- function(list = NULL,
+                               token = NULL,
+                               count = Inf) {
+
+  base_url <- "https://api.crowdtangle.com/"
+
+  if (is.null(token)) {
+    token <- Sys.getenv("CROWDTANGLE_TOKEN")
+  }
+  if (identical(token, "")) {
+    stop("You need a token to continue. See ?ct_auth()")
+  }
+
+  if (is.null(list)){
+    stop("Please provide the crowdtangle list id in 'list'.")
+  }
+
+  if (is.null(count)) {
+    count <- 100L
+  }
+  pages <- ceiling(count / 100L)
+  if (count > 100L) count <- 100L
+
+  i <- 1
+
+  url <- httr::modify_url(base_url, path = paste0("lists/", list, "/accounts"))
+  res <- httr::GET(url, httr::add_headers("x-api-token" = token))
+  con <- httr::content(res)
+  out <- con$result$accounts
+
+  while (identical(length(url), 1L)) {
+
+    new_res <- httr::GET(url, httr::add_headers("x-api-token" = token))
+
+    new_con <- httr::content(new_res)
+
+    if (!is.null(new_con[["message"]]) &&
+        !identical(new_con[["code"]], 32L)) {
+      warning(new_con[["message"]])
+    }
+
+    # Append content lists
+    out_new <- new_con$result$accounts
+    out <- base::append(out, out_new)
+
+    if (identical(new_con[["code"]], 32L)) {
+      message("Rate limit reached. Waiting 1 minute...")
+      Sys.sleep(61)
+    } else {
+      message("Pulled page ", i, "...")
+      url <- new_con$result$pagination[["nextPage"]]
+      i <- i + 1
+      pages <- pages - 1
+    }
+    if (identical(pages, 0)) url <- character()
+  }
+
+  out <- dplyr::bind_rows(out)
+
+  return(out)
+}
+
