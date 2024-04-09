@@ -80,24 +80,3 @@ A data frame containing a grid of account ids or handles and time frames for dat
 This function constructs a grid of account handles or IDs and time frames to collect data from various APIs,
 especially useful for social media platforms.
 }
-\examples{
-df <- tibble::tribble(
-  ~country, ~party, ~name, ~handle,
-  "at", "fpö", "Herbert Kickl", "herbertkickl",
-  "at", "övp", "TBD", NA,
-  "at", "Grüne", "Werner Kogler", "wernerkogler"
-)
-create_call_grid(
-  df = df,
-  platform = "fb",
-  country_var = "country",
-  party_var = "party",
-  name_var = "name",
-  account_var = "handle",
-  filename_var = "filename",
-  start_date = "2023-08-25",
-  end_date = "2024-01-24",
-  unit = "quarter"
-)
-
-}

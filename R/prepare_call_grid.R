@@ -193,6 +193,8 @@ slice_timeframes <- function(start_date = NULL,
 
 
 
+
+
 #' Create Call Grid for Social Media Data Collection
 #'
 #' This function constructs a grid of account handles or IDs and time frames to collect data from various APIs,
@@ -228,26 +230,6 @@ slice_timeframes <- function(start_date = NULL,
 #'
 #' @return A data frame containing a grid of account ids or handles and time frames for data collection.
 #'
-#' @examples
-#' df <- tibble::tribble(
-#'   ~country, ~party, ~name, ~handle,
-#'   "at", "fpö", "Herbert Kickl", "herbertkickl",
-#'   "at", "övp", "TBD", NA,
-#'   "at", "Grüne", "Werner Kogler", "wernerkogler"
-#' )
-#' create_call_grid(
-#'   df = df,
-#'   platform = "fb",
-#'   country_var = "country",
-#'   party_var = "party",
-#'   name_var = "name",
-#'   account_var = "handle",
-#'   filename_var = "filename",
-#'   start_date = "2023-08-25",
-#'   end_date = "2024-01-24",
-#'   unit = "quarter"
-#' )
-#'
 #' @export
 create_call_grid <- function(df = df,
                              platform = c("fb", "ig", "tt", "yt", "tg", "bc", "bs"),
@@ -268,6 +250,8 @@ create_call_grid <- function(df = df,
                              data_path = NULL,
                              count = Inf,
                              drop_existing = FALSE) {
+
+  # Create timeframe dataframe
   time_df <- slice_timeframes(
     start_date = start_date,
     end_date = end_date,
@@ -293,11 +277,12 @@ create_call_grid <- function(df = df,
 
   # Grid
 
-  # Ensure that account_var is named correctly
+  # Create list of two columns,
   grid_list <- list(
     start_date = time_df[["start_date"]],
     account_df[[account_var]]
   )
+  # Name account_var correctly
   names(grid_list)[[2]] <- account_var
 
   # Get all combinations of timeframe and accounts
@@ -315,10 +300,8 @@ create_call_grid <- function(df = df,
     "_DL"
   )
 
-
   # Replace data path if empty
   if (is.null(data_path)) data_path <- "./data"
-
 
   # Create crowdtangle grid
   if (platform %in% c("fb", "ig")) {
@@ -333,8 +316,37 @@ create_call_grid <- function(df = df,
       data <- data_path
     })
 
+    # Assign crowdtangle list variable
+    if (platform == "fb"){
+
+      if(!"fb_ct_list_id" %in% names(grid_df)){
+        stop("Please provide a variable 'fb_ct_list_id' in 'df' specifying the crowdtangle-list id.")
+      }else{
+        grid_df <- within(grid_df, {
+          ct_list <- grid_df[["fb_ct_list_id"]]
+        })
+      }
+    }else{ ## i.e. if platform == "ig"
+      if(!"ig_ct_list_id" %in% names(grid_df)){
+        stop("Please provide a variable 'ig_ct_list_id' in 'df' specifying the crowdtangle-list id.")
+      }else{
+        grid_df <- within(grid_df, {
+          ct_list <- grid_df[["ig_ct_list_id"]]
+        })
+      }
+    }
+
+    # Drop observations where no ct_list is specified
+
+    n_missinglist <- length(unique(grid_df[is.na(grid_df$ct_list), ][[account_var]]))
+
+    if(n_missinglist > 0){
+      warning(paste0("Some accounts do not include information about a Crowdtangle list. Dropping n = ", n_missinglist, " accounts."))
+      grid_df <- grid_df |> dplyr::filter(!is.na(ct_list))
+    }
+
     # Reordering columns
-    grid_df <- grid_df[, c("accounts", "start", "end", "filename", "count", "sortBy", "parse", "data")]
+    grid_df <- grid_df[, c("accounts", "ct_list", "start", "end", "filename", "count", "sortBy", "parse", "data")]
   }
 
 
@@ -365,6 +377,7 @@ create_call_grid <- function(df = df,
 
   return(grid_df)
 }
+
 
 
 
