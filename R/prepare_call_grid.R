@@ -176,7 +176,7 @@ slice_timeframes <- function(start_date = NULL,
 
 
   # Drop last pair if unit is "day"
-  if (unit == "day") {
+  if (unit %in% c("day", "days")) {
     # Drop the last element of 'start_datetime' and 'end_datetime'
     start_datetime <- start_datetime[-length(start_datetime)]
     start_days <- start_days[-length(start_days)]
