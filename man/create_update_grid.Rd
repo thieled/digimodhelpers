@@ -39,7 +39,8 @@ Valid values are "fb" (Facebook), "ig" (Instagram), "tt" (TikTok), "yt" (YouTube
 
 \item{filename_var}{The variable in the data frame representing filename information.}
 
-\item{account_var}{The variable in the data frame representing handle information.}
+\item{account_var}{The variable in the data frame representing handle information.
+IMPORTANT: For Crowdtangle this is assumed to be the handle, while for all other platforms, a account_id is expected.}
 
 \item{start_date}{The start date for the update grid.}
 

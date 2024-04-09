@@ -436,11 +436,12 @@ drop_existing <- function(path,
 #' @param df The data frame containing relevant information for creating the update grid.
 #' @param platform A character vector specifying the platforms to include in the update grid.
 #'   Valid values are "fb" (Facebook), "ig" (Instagram), "tt" (TikTok), "yt" (YouTube), "tg" (Telegram), "bc" (BitChute), and "bs" (BitScope).
+#' @param account_var The variable in the data frame representing handle information.
+#' IMPORTANT: For Crowdtangle this is assumed to be the handle, while for all other platforms, a account_id is expected.
 #' @param country_var The variable in the data frame representing country information.
 #' @param party_var The variable in the data frame representing party information.
 #' @param name_var The variable in the data frame representing name information.
 #' @param filename_var The variable in the data frame representing filename information.
-#' @param account_var The variable in the data frame representing handle information.
 #' @param start_date The start date for the update grid.
 #' @param end_date The end date for the update grid.
 #' @param name_sep The separator used in constructing filenames.
@@ -482,8 +483,22 @@ create_update_grid <- function(df = df,
   latest_dt <- find_latest(data_path)
 
   # Rename variables
-  data.table::setnames(latest_dt, "account_handle", account_var)
-  data.table::setnames(latest_dt, "date", "start_date")
+
+  if(platform %in% c("fb", "ig")){
+
+    message(paste0("Defining 'account_handle' as ", account_var, " - for Crowdtangle."))
+    data.table::setnames(latest_dt, "account_handle", account_var)
+
+  }else{ ### This assumes that in all other platforms that CT, we use account_ids
+
+    message(paste0("Defining 'account_id' as ", account_var, " - for all non-Crowdtangle platforms."))
+    data.table::setnames(latest_dt, "account_id", account_var)
+
+  }
+
+  # Set latest time as new start time
+  data.table::setnames(latest_dt, "published_time", "start_date")
+
   # Set now as end date, and latest found date as start_date, format into right format
   latest_dt[, start_datetime := start_date |> lubridate::format_ISO8601()]
   latest_dt[, end_datetime := lubridate::now() |> lubridate::format_ISO8601()]
@@ -524,12 +539,12 @@ create_update_grid <- function(df = df,
   # Replace empty start_datetime and end_dtatetime
   grid_df <- grid_df |> dplyr::mutate(
     start_datetime = ifelse(is.na(start_datetime),
-      lubridate::as_datetime(start_date) |> lubridate::format_ISO8601(),
-      start_datetime
+                            lubridate::as_datetime(start_date) |> lubridate::format_ISO8601(),
+                            start_datetime
     ),
     end_datetime = ifelse(is.na(end_datetime),
-      lubridate::now() |> lubridate::format_ISO8601(),
-      end_datetime
+                          lubridate::now() |> lubridate::format_ISO8601(),
+                          end_datetime
     )
   )
 
@@ -548,7 +563,7 @@ create_update_grid <- function(df = df,
   if (is.null(data_path)) data_path <- "./data"
 
 
-  # # Create crowdtangle grid
+  # Create crowdtangle grid
   if (platform %in% c("fb", "ig")) {
     grid_df <- within(grid_df, {
       accounts <- grid_df[[account_var]]
@@ -561,10 +576,38 @@ create_update_grid <- function(df = df,
       data <- data_path
     })
 
-    # Reordering columns
-    grid_df <- grid_df[, c("accounts", "start", "end", "filename", "count", "sortBy", "parse", "data")]
-  }
+    # Assign crowdtangle list variable
+    if (platform == "fb"){
 
+      if(!"fb_ct_list_id" %in% names(grid_df)){
+        stop("Please provide a variable 'fb_ct_list_id' in 'df' specifying the crowdtangle-list id.")
+      }else{
+        grid_df <- within(grid_df, {
+          ct_list <- grid_df[["fb_ct_list_id"]]
+        })
+      }
+    }else{ ## i.e. if platform == "ig"
+      if(!"ig_ct_list_id" %in% names(grid_df)){
+        stop("Please provide a variable 'ig_ct_list_id' in 'df' specifying the crowdtangle-list id.")
+      }else{
+        grid_df <- within(grid_df, {
+          ct_list <- grid_df[["ig_ct_list_id"]]
+        })
+      }
+    }
+
+    # Drop observations where no ct_list is specified
+
+    n_missinglist <- length(unique(grid_df[is.na(grid_df$ct_list), ][[account_var]]))
+
+    if(n_missinglist > 0){
+      warning(paste0("Some accounts do not include information about a Crowdtangle list. Dropping n = ", n_missinglist, " accounts."))
+      grid_df <- grid_df |> dplyr::filter(!is.na(ct_list))
+    }
+
+    # Reordering columns
+    grid_df <- grid_df[, c("accounts", "ct_list", "start", "end", "filename", "count", "sortBy", "parse", "data")]
+  }
 
 
   # Create yt grid
