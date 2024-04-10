@@ -25,7 +25,8 @@ Imports:
     jsonlite,
     tidytable,
     readr,
-    httr
+    httr,
+    plyr
 Remotes: 
     JBGruber/crowdtangler,
     gojiplus/tuber
