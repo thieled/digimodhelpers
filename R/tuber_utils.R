@@ -192,17 +192,24 @@ get_playlist_items_FIX <- function(filter = NULL, part = "contentDetails",
                     pageToken = page_token, videoId = video_id)
   querylist <- c(querylist, filter)
 
-  res <- tuber:::tuber_GET("playlistItems", querylist, ...)
+  res <- tuber:::tuber_GET(path = "playlistItems",
+                           query = querylist,
+                           ...)
 
   if (max_results > 50) {
+
     page_token <- res$nextPageToken
+
+
     while (is.character(page_token)) {
-      a_res <- tuber:::tuber_GET("playlistItems", list(
-        part = part,
-        playlistId = unname(filter["playlistId"]),
-        maxResults = 50,
-        pageToken = page_token
-      ), ...)
+      a_res <- tuber:::tuber_GET(path = "playlistItems",
+                                 query = list(
+                                   part = part,
+                                   playlistId = unname(filter[["playlistId"]]), ## <--- double brackets
+                                   maxResults = 50,
+                                   pageToken = page_token
+                                 ),
+                                 ...) ## <--- pass arguments to tuber_GET
       res <- c(res, a_res)
       page_token <- a_res$nextPageToken
     }
@@ -221,5 +228,5 @@ get_playlist_items_FIX <- function(filter = NULL, part = "contentDetails",
       )
   }
 
-  res
+  return(res)
 }
