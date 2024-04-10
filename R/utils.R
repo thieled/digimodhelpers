@@ -16,5 +16,6 @@ utils::globalVariables(c(
   "doubts_var",
   "handle",
   "list_id",
-  "id"
+  "id",
+  "snippet"
 ))

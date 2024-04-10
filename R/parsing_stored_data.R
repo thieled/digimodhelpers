@@ -213,7 +213,6 @@ parse_latest <- function(path) {
 
 
   ### Parse data from youtube
-
   if(files_df[["plat"]][[1]] %in% c("yt")){
 
 
@@ -222,14 +221,17 @@ parse_latest <- function(path) {
       RcppSimdJson::fload(f,
                           empty_array = data.frame(),
                           empty_object = data.frame()),
-      fill = TRUE, use.names = F, idcol = "file")
+      fill = TRUE, use.names = T, idcol = "file")
 
-    # Unlist 'items' column
-    file_dt[, items := purrr::map(file_dt[, items], ~ unlist(.x))]
+    # Using map to filter elements with length greater than 1
+    file_dt[, snippet := purrr::map(file_dt[, snippet], ~Filter(function(x) length(x) == 1, .x))]
 
-    # Unnest 'items' column
+    # Unlist 'snippet' column
+    file_dt[, snippet := purrr::map(file_dt[, snippet], ~ unlist(.x))]
+
+    # Unnest 'snippet' column
     file_dt <- tidytable::unnest_wider(file_dt,
-                                       items,
+                                       snippet,
                                        names_sep = "_",
                                        names_repair = "minimal")
 
@@ -237,9 +239,9 @@ parse_latest <- function(path) {
     required_cols <- c(
       "file",
       "download_time",
-      "items_id",
-      "items_snippet.publishedAt",
-      "items_snippet.channelId"
+      "id",
+      "snippet_publishedAt",
+      "snippet_channelId"
     )
 
     keep_cols <- colnames(file_dt)[colnames(file_dt) %in% required_cols]
@@ -249,9 +251,9 @@ parse_latest <- function(path) {
 
     # Columns to rename
     old_names <- c(
-      "items_id",
-      "items_snippet.publishedAt",
-      "items_snippet.channelId")
+      "id",
+      "snippet_publishedAt",
+      "snippet_channelId")
     new_names <- c("item_id",
                    "published_time",
                    "account_id")
