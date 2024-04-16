@@ -13,6 +13,7 @@
 #' @export
 parse_filenames <- function(path,
                             recursive = FALSE) {
+  # Get full filepath
   if (dir.exists(path)[[1]]) {
     full_filepath <- list.files(
       path = path,
@@ -23,6 +24,7 @@ parse_filenames <- function(path,
     )
   }
 
+  # Get filename only
   if (dir.exists(path)[[1]]) {
     existing_jsons <- list.files(
       path = path,
@@ -129,6 +131,9 @@ parse_filenames <- function(path,
 #' @export
 #'
 parse_latest <- function(path) {
+
+  # Check path for invalid .jsons - and move invalid ones into subfolder
+  remove_invalid_jsons(path)
 
   # Call "parse filenames" function from digimodhelpers - extract info from json filenames
   files_df <- parse_filenames(path)
