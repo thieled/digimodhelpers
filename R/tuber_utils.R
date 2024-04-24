@@ -67,11 +67,12 @@ get_channel_vids <- function(channel_id = channel_id,
       playlist_items$contentDetails.videoPublishedAt <- lubridate::as_datetime(playlist_items$contentDetails.videoPublishedAt)
 
       if(!is.null(start_date)){
-        playlist_items <- subset(playlist_items, contentDetails.videoPublishedAt > lubridate::as_datetime(start_date))
+        playlist_items <- subset(playlist_items, contentDetails.videoPublishedAt >= lubridate::as_datetime(start_date))
       }
 
+      # very stupid mistake here...
       if(!is.null(end_date)){
-        playlist_items <- subset(playlist_items, contentDetails.videoPublishedAt > lubridate::as_datetime(end_date))
+        playlist_items <- subset(playlist_items, contentDetails.videoPublishedAt <= lubridate::as_datetime(end_date))
       }
 
     }
