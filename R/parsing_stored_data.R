@@ -311,3 +311,152 @@ find_latest <- function(path) {
   return(result)
 
 }
+
+
+
+
+
+
+#' Parse data from specified directory
+#'
+#' This function parses data from the specified directory. It first checks if the directory exists. If not, it throws an error.
+#' Then, it removes invalid JSON files from the directory, if any. Next, it parses the filenames and extracts information
+#' from them. Depending on the platform (Facebook, Instagram, or YouTube), it parses the data accordingly using the
+#' appropriate methods.
+#'
+#' @param dir A character string specifying the directory from which data needs to be parsed.
+#'
+#' @return A data.table containing parsed data from the specified directory.
+#'
+#' @export
+parse_data <- function(dir) {
+
+  if(!dir.exists(dir)) stop(paste0("There is no such directory ", dir))
+
+  # Check path for invalid .jsons - and move invalid ones into subfolder
+  remove_invalid_jsons(dir)
+
+  # Call "parse filenames" function from digimodhelpers - extract info from json filenames
+  files_df <- parse_filenames(dir)
+
+  # extract the file paths
+  f <- files_df[["full_filepath"]]
+
+  ###  Parse data from crowdtangle
+
+  if(files_df[["plat"]][[1]] %in% c("ig", "fb")){
+
+    # Parse and bind all latest jsons
+    file_dt <- data.table::rbindlist( # bind as data.table
+      out <- RcppSimdJson::fload(f, # use super-fast RcppSimdJson parser
+                                 empty_array = data.frame(), # define what to do with empty observations
+                                 empty_object = data.frame()
+      ) |>
+        purrr::map2(c("result"), `[[`) |> # extract "result" element from parsed json list
+        purrr::map2(c("posts"), `[[`), # extract "posts"
+      use.names = TRUE,
+      fill = TRUE,
+      idcol = "file" # stores the filename
+    )
+
+    # Unlist 'account' column
+    file_dt[, account := purrr::map(file_dt[, account], ~ unlist(.x))]
+
+    # Unnest 'account' column
+    file_dt <- tidytable::unnest_wider(file_dt,
+                                       account,
+                                       names_sep = "_",
+                                       names_repair = "minimal")
+
+    # Extract FB account ID from account_url;
+    # NOTE: the original 'account_id' variable seems to be specific to CT
+    file_dt[, account_id := gsub(".*\\/(\\d+)$", "\\1", account_url)]
+
+
+    # Define columns to keep
+    keep_cols <- colnames(file_dt)[colnames(file_dt) %in% c(
+      "file",
+      "date",
+      "account_id",
+      "account_handle",
+      "platformId"
+    )]
+
+    # Drop unneccessary columns
+    file_dt <- file_dt[, keep_cols, with = FALSE]
+
+    names(file_dt)
+
+    # Columns to rename
+    old_names <- c(
+      "platformId",
+      "date"
+    )
+    new_names <- c("item_id",
+                   "published_time")
+
+    # Rename columns
+    data.table::setnames(file_dt, old_names, new_names)
+
+    ## Note for later: Download time info can be merged from filenames, stored in files_df
+    ## TO DO: Store dl time in .json? - Problem: Would need to change crowdtangler again
+
+  }
+
+
+  ### Parse data from youtube
+  if(files_df[["plat"]][[1]] %in% c("yt")){
+
+
+    # Parse and bind jsons
+    file_dt <- data.table::rbindlist(
+      RcppSimdJson::fload(f,
+                          empty_array = data.frame(),
+                          empty_object = data.frame()),
+      fill = TRUE, use.names = T, idcol = "file")
+
+    # Using map to filter elements with length greater than 1
+    file_dt[, snippet := purrr::map(file_dt[, snippet], ~Filter(function(x) length(x) == 1, .x))]
+
+    # Unlist 'snippet' column
+    file_dt[, snippet := purrr::map(file_dt[, snippet], ~ unlist(.x))]
+
+    # Unnest 'snippet' column
+    file_dt <- tidytable::unnest_wider(file_dt,
+                                       snippet,
+                                       names_sep = "_",
+                                       names_repair = "minimal")
+
+    names(file_dt)
+
+    # Define cols to keep
+    required_cols <- c(
+      "file",
+      "download_time",
+      "id",
+      "snippet_publishedAt",
+      "snippet_channelId"
+    )
+
+    keep_cols <- colnames(file_dt)[colnames(file_dt) %in% required_cols]
+
+    # Subset data.table
+    file_dt <- file_dt[, keep_cols, with = FALSE]
+
+    # Columns to rename
+    old_names <- c(
+      "id",
+      "snippet_publishedAt",
+      "snippet_channelId")
+    new_names <- c("item_id",
+                   "published_time",
+                   "account_id")
+
+    # Rename columns
+    data.table::setnames(file_dt, old_names, new_names)
+
+  }
+
+
+  return(file_dt)
+}
