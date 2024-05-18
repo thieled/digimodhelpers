@@ -149,7 +149,8 @@ parse_latest <- function(path) {
   data.table::setDT(files_df)
 
   # Find the latest datetime - by end date and download date
-  latest_dt <- files_df[, .SD[to_datetime == max(to_datetime) & dl_datetime == max(dl_datetime)], by = person]
+  latest_dt <- files_df[, .SD[to_datetime == max(to_datetime)], by = person]
+  latest_dt <- latest_dt[, .SD[dl_datetime == max(dl_datetime)], by = person]
 
   # extract the file paths
   f <- latest_dt[["full_filepath"]]
