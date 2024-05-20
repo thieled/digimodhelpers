@@ -160,6 +160,9 @@ parse_latest <- function(path) {
 
   if(files_df[["plat"]][[1]] %in% c("ig", "fb")){
 
+    # Move status 200 files elsewhere
+    remove_error_jsons(path)
+
     # Parse and bind all latest jsons
     file_dt <- data.table::rbindlist( # bind as data.table
       out <- RcppSimdJson::fload(f, # use super-fast RcppSimdJson parser
