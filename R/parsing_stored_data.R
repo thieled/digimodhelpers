@@ -138,8 +138,16 @@ parse_latest <- function(path) {
   # Call "parse filenames" function from digimodhelpers - extract info from json filenames
   files_df <- parse_filenames(path)
 
-  # Get filename from full path:
-  # files_df$file <- basename(files_df$full_filepath)
+  # Remove error files from ct path
+  if(files_df[["plat"]][[1]] %in% c("ig", "fb")){
+
+    remove_error_jsons(path)
+
+    # And call parse_filenames again
+    files_df <- parse_filenames(path)
+
+  }
+
 
   # set datetime as datetime
   files_df[["to_datetime"]] <- lubridate::as_datetime(files_df[["to_datetime"]])
@@ -160,8 +168,6 @@ parse_latest <- function(path) {
 
   if(files_df[["plat"]][[1]] %in% c("ig", "fb")){
 
-    # Move status 200 files elsewhere
-    remove_error_jsons(path)
 
     # Parse and bind all latest jsons
     file_dt <- data.table::rbindlist( # bind as data.table
