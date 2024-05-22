@@ -55,15 +55,15 @@ create_call_grid_tt <- function(df = df,
                                 data_path = NULL,
                                 count = Inf,
                                 drop_existing = FALSE) {
-  
+
   time_df <- digimodhelpers::slice_timeframes(start_date = start_date,
                                               end_date = end_date,
                                               unit = unit
   )
-  
+
   # Prepare handle df
   handle_df <- drop_redundant(df = df, handle_var = handle_var)
-  
+
   # Prepare filename in handle_df
   handle_df <- digimodhelpers::create_filename(df = handle_df,
                                                platform = platform,
@@ -76,19 +76,19 @@ create_call_grid_tt <- function(df = df,
                                                replace_non_ascii = replace_non_ascii,
                                                filename_sep = filename_sep
   )
-  
+
   # Grid
-  
+
   # Ensure that handle_var is named correctly
   grid_list <- list(start_date = time_df[["start_date"]],
                     handle_df[[handle_var]])
   names(grid_list)[[2]] <- handle_var
-  
+
   # Get all combinations of timeframe and accounts
   grid_df <- expand.grid(grid_list) |>
     dplyr::left_join(time_df) |>
     dplyr::left_join(handle_df)
-  
+
   # Add time info to filename
   grid_df[[filename_var]] <-  paste0(
     grid_df[[filename_var]],
@@ -98,15 +98,15 @@ create_call_grid_tt <- function(df = df,
     sub("\\:", "m", sub("\\:", "h", grid_df[["end_datetime"]])),
     "_DL"
   )
-  
-  
+
+
   # Replace data path if empty
   if(is.null(data_path)) data_path <- "./data"
-  
-  
+
+
   # # Create traktok grid
   if(platform %in% "tt"){
-    
+
     grid_df <- within(grid_df, {
       accounts <- grid_df[[handle_var]]
       start <- grid_df[["start_datetime"]]
@@ -117,22 +117,22 @@ create_call_grid_tt <- function(df = df,
       parse <- parse
       data <- data_path
     })
-    
+
     # Reordering columns
     grid_df <- grid_df[, c("accounts", "start", "end", "filename", "count", "sortBy", "parse", "data")]
-    
+
   }
-  
-  
+
+
   if(drop_existing==TRUE){
-    
+
     grid_df <-  drop_existing(path = data_path,
                               grid = grid_df,
                               filename_var = filename_var)
-    
+
   }
-  
-  
+
+
   return(grid_df)
 }
 
@@ -165,16 +165,16 @@ call_log_tt <- function(grid_df,
                         compact = FALSE,
                         progress_bar = TRUE,
                         return_results = TRUE) {
-  
+
   # Define log file
   now <- format(Sys.time(), "%Y-%m-%dT%Hh%Mm%S")
   dir.create(file.path(grid_df$data[[1]], "log"), showWarnings = FALSE)
   log_file <- paste0(grid_df$data[[1]], "/log", "/call_log_tt_", now, ".log")
-  
+
   # Set up logging
   logger::log_appender(logger::appender_file(log_file))
   logger::log_info("Logging started.")
-  
+
   # Define a function to handle each row of the grid
   process_row <- function(row) {
     accounts <- row$accounts
@@ -185,39 +185,39 @@ call_log_tt <- function(grid_df,
     sortBy <- row$sortBy
     parse <- row$parse
     data <- row$data
-    
+
     # Log row information
     logger::log_info(paste0("Calling TT: Account - ", accounts, ", Start - ",
                             start, ", End - ", end, " Filepath - ", data, "/", filename ))
-    
+
     max_retries <- 2  # Maximum number of retries
     retry_count <- 0
-    
+
     while (retry_count < max_retries) {
       tryCatch({
-        
+
         # Format start and end dates
         formatted_start <- format(as.POSIXct(start), "%Y%m%d")
         formatted_end <- format(as.POSIXct(end), "%Y%m%d")
-        
+
         # Call the API function tt_search_api
         result <- traktok::query() |>
           traktok::query_and(field_name = "username",
                              operation = "IN",
                              field_values = accounts) |>
           traktok::tt_search_api(start_date = formatted_start, end_date = formatted_end, max_pages = 10)
-        
+
         if(parse) {
           logger::log_info(paste("Posts fetched:", nrow(result)))
         }
-        
+
         # Save result as JSON
         json_file <- file.path(work_dir, paste0("tt_pull_", filename, "_", now, ".json"))
         jsonlite::write_json(result, json_file)
         logger::log_info(paste("Results saved as JSON:", json_file))
-        
+
         return(result)
-        
+
       }, error = function(e) {
         # Log errors
         logger::log_error(paste("Error in:", filename, "Message:", e$message))
@@ -232,22 +232,22 @@ call_log_tt <- function(grid_df,
         logger::log_warn(paste("Warning in", filename, "Message:", w$message))
         return(NULL)
       })
-      
+
       # Increment retry_count
       retry_count <- retry_count + 1
     } # end of while loop
-    
+
     # Return NULL if max retries reached
     return(NULL)
   } # end of process_row function
-  
+
   # Iterate over rows of the grid_df and call process_row for each row
   results <- lapply(split(grid_df, seq(nrow(grid_df))), process_row)
-  
+
   # Close the logging
   logger::log_info("Logging completed.")
   logger::log_appender(NULL)
-  
+
   return(results)
 }
 
@@ -273,33 +273,33 @@ call_log_tt <- function(grid_df,
 #'
 
 get_comments_tt <- function(recent_videos, work_dir_input) {
-  
+
   work_dir <- work_dir_input
-  
+
   # Set up logging
   logger::log_appender(logger::appender_file(paste0(work_dir, "/log/", "call_log_tt_comments_", current_time, ".log")))
   logger::log_info("Logging started.")
-  
+
   # Initialize a list to store results for each row
   results_list <- vector("list", nrow(recent_videos))
-  
+
   # Loop over each row of the recent_videos dataframe
   for (i in 1:nrow(recent_videos)) {
     video_id <- recent_videos$video_id[i]
-    
+
     # Log information about the current video being processed
     logger::log_info(paste0("Processing video ID: ", video_id))
-    
+
     tryCatch({
       # Call tt_comments_api function
       result <- traktok::tt_comments_api(video_id, fields = "all", max_pages = 10)
-      
+
       # Add the result to the results list
       results_list[[i]] <- result
-      
+
       # Log success
       logger::log_info(paste("Comments fetched for video ID:", video_id))
-      
+
     }, error = function(e) {
       # Log errors
       logger::log_error(paste("Error processing video ID:", video_id, "Message:", e$message))
@@ -307,18 +307,20 @@ get_comments_tt <- function(recent_videos, work_dir_input) {
       logger::log_warn(paste("Warning processing video ID:", video_id, "Message:", w$message))
     })
   }
-  
+
   # Add the results list as a new column to the dataframe
   recent_videos$comments <- results_list
-  
+
+
+
   # Save the entire dataframe as a JSON file
   json_file <- paste0(work_dir, "/tt_comments_of_all_videos_", "FR_", one_week_ago, "_TO_", current_time, ".json")
   jsonlite::write_json(recent_videos, json_file)
   logger::log_info(paste("Results saved as JSON:", json_file))
-  
+
   # Close the logging
   logger::log_info("Logging completed.")
   logger::log_appender(NULL)
-  
+
   return(recent_videos)
 }
