@@ -11,7 +11,7 @@ create_call_grid_tt(
   party_var = NULL,
   name_var = NULL,
   filename_var = NULL,
-  handle_var = NULL,
+  account_var = NULL,
   start_date = NULL,
   end_date = NULL,
   unit = "month",
@@ -44,6 +44,9 @@ Default is NULL.}
 \item{filename_var}{A character string specifying the column name in the data frame that contains filename information.
 Default is NULL.}
 
+\item{account_var}{A character string specifying the column name in the data frame that contains the account specifier - ID or handle.
+Default is NULL.}
+
 \item{start_date}{A character or Date object indicating the starting date of the timeframe.}
 
 \item{end_date}{A character or Date object indicating the ending date of the timeframe.}
@@ -69,9 +72,6 @@ Options include "day", "week", "month", "quarter", and "year". Default is "month
 
 \item{drop_existing}{Logical. Should calls for files that already exist in data_path be excluded from the grid. Default is FALSE.
 Default is NULL, which means the data will be stored in the current directory under the "data" folder.}
-
-\item{account_var}{A character string specifying the column name in the data frame that contains the account specifier - ID or handle.
-Default is NULL.}
 }
 \value{
 A data frame containing a grid of account ids or handles and time frames for data collection.

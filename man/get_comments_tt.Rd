@@ -4,28 +4,12 @@
 \alias{get_comments_tt}
 \title{Call TikTok API to get comment metadata of the collected videos and Log Results}
 \usage{
-get_comments_tt(recent_videos, work_dir_input)
+get_comments_tt(recent_videos, work_dir)
 }
 \arguments{
-\item{grid_df}{The grid dataframe containing information about the API calls to be made.}
+\item{recent_videos}{MM pls add doc.}
 
-\item{traceback}{Logical; indicates whether to show traceback in case of an error. Default is FALSE.}
-
-\item{autolog}{Logical; indicates whether to start logging. Default is TRUE.}
-
-\item{show_notes}{Logical; indicates whether to show informational notes during logging. Default is TRUE.}
-
-\item{compact}{Logical; indicates whether to use a compact logging format. Default is FALSE.}
-
-\item{progress_bar}{Logical; indicates whether to display a progress bar during API calls. Default is TRUE.}
-
-\item{return_results}{Logical; indicates whether to return the results of the API calls. Default is TRUE.}
-
-\item{verbose}{Logical; indicates whether to display verbose output during logging. Default is TRUE.}
-
-\item{fb_token}{The Facebook API token.}
-
-\item{ig_token}{The Instagram API token.}
+\item{work_dir}{Sets a working directory - MM plz check.}
 }
 \value{
 If return_results is TRUE, a list containing the results of the API calls.

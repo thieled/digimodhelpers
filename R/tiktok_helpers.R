@@ -42,7 +42,7 @@ create_call_grid_tt <- function(df = df,
                                 party_var = NULL,
                                 name_var = NULL,
                                 filename_var = NULL,
-                                handle_var = NULL,
+                                account_var = NULL,
                                 start_date = NULL,
                                 end_date = NULL,
                                 unit = "month",
@@ -62,7 +62,7 @@ create_call_grid_tt <- function(df = df,
   )
 
   # Prepare handle df
-  handle_df <- drop_redundant(df = df, handle_var = handle_var)
+  handle_df <- drop_redundant(df = df, account_var = account_var)
 
   # Prepare filename in handle_df
   handle_df <- digimodhelpers::create_filename(df = handle_df,
@@ -79,10 +79,10 @@ create_call_grid_tt <- function(df = df,
 
   # Grid
 
-  # Ensure that handle_var is named correctly
+  # Ensure that account_var is named correctly
   grid_list <- list(start_date = time_df[["start_date"]],
-                    handle_df[[handle_var]])
-  names(grid_list)[[2]] <- handle_var
+                    handle_df[[account_var]])
+  names(grid_list)[[2]] <- account_var
 
   # Get all combinations of timeframe and accounts
   grid_df <- expand.grid(grid_list) |>
@@ -108,7 +108,7 @@ create_call_grid_tt <- function(df = df,
   if(platform %in% "tt"){
 
     grid_df <- within(grid_df, {
-      accounts <- grid_df[[handle_var]]
+      accounts <- grid_df[[account_var]]
       start <- grid_df[["start_datetime"]]
       end <- grid_df[["end_datetime"]]
       filename <- grid_df[[filename_var]]
@@ -142,15 +142,13 @@ create_call_grid_tt <- function(df = df,
 #' This function calls the TikTok API for each row in the provided grid dataframe, logs the results, and optionally returns the results.
 #'
 #' @param grid_df The grid dataframe containing information about the API calls to be made.
+#' @param work_dir Sets a working dictionary (MM pls check)
 #' @param traceback Logical; indicates whether to show traceback in case of an error. Default is FALSE.
 #' @param autolog Logical; indicates whether to start logging. Default is TRUE.
 #' @param show_notes Logical; indicates whether to show informational notes during logging. Default is TRUE.
 #' @param compact Logical; indicates whether to use a compact logging format. Default is FALSE.
 #' @param progress_bar Logical; indicates whether to display a progress bar during API calls. Default is TRUE.
 #' @param return_results Logical; indicates whether to return the results of the API calls. Default is TRUE.
-#' @param verbose Logical; indicates whether to display verbose output during logging. Default is TRUE.
-#' @param fb_token The Facebook API token.
-#' @param ig_token The Instagram API token.
 #'
 #' @return If return_results is TRUE, a list containing the results of the API calls.
 #'
@@ -256,28 +254,22 @@ call_log_tt <- function(grid_df,
 #'
 #' This function calls the TikTok API for each row in the provided grid dataframe, logs the results, and optionally returns the results.
 #'
-#' @param grid_df The grid dataframe containing information about the API calls to be made.
-#' @param traceback Logical; indicates whether to show traceback in case of an error. Default is FALSE.
-#' @param autolog Logical; indicates whether to start logging. Default is TRUE.
-#' @param show_notes Logical; indicates whether to show informational notes during logging. Default is TRUE.
-#' @param compact Logical; indicates whether to use a compact logging format. Default is FALSE.
-#' @param progress_bar Logical; indicates whether to display a progress bar during API calls. Default is TRUE.
-#' @param return_results Logical; indicates whether to return the results of the API calls. Default is TRUE.
-#' @param verbose Logical; indicates whether to display verbose output during logging. Default is TRUE.
-#' @param fb_token The Facebook API token.
-#' @param ig_token The Instagram API token.
-#'
+#' @param work_dir Sets a working directory - MM plz check.
+#' @param recent_videos MM pls add doc.
 #' @return If return_results is TRUE, a list containing the results of the API calls.
 #'
 #' @export
 #'
 
-get_comments_tt <- function(recent_videos, work_dir_input) {
+get_comments_tt <- function(recent_videos, work_dir) {
 
-  work_dir <- work_dir_input
+  # Define log file
+  now <- format(Sys.time(), "%Y-%m-%dT%Hh%Mm%S")
+  dir.create(file.path(paste0(work_dir, "log"), showWarnings = FALSE))
+  log_file <- paste0(work_dir, "/log", "/call_log_tt_comments_", now, ".log")
 
   # Set up logging
-  logger::log_appender(logger::appender_file(paste0(work_dir, "/log/", "call_log_tt_comments_", current_time, ".log")))
+  logger::log_appender(logger::appender_file(paste0(work_dir, "/log/", "call_log_tt_comments_", now, ".log")))
   logger::log_info("Logging started.")
 
   # Initialize a list to store results for each row
@@ -311,10 +303,11 @@ get_comments_tt <- function(recent_videos, work_dir_input) {
   # Add the results list as a new column to the dataframe
   recent_videos$comments <- results_list
 
-
+  # Get one week ago  -- MM: pls change format if you need that in specific format
+  one_week_ago <- format(now - as.difftime(7, units = "days"), "%Y-%m-%dT%Hh%Mm%S")
 
   # Save the entire dataframe as a JSON file
-  json_file <- paste0(work_dir, "/tt_comments_of_all_videos_", "FR_", one_week_ago, "_TO_", current_time, ".json")
+  json_file <- paste0(work_dir, "/tt_comments_of_all_videos_", "FR_", one_week_ago, "_TO_", now, ".json")
   jsonlite::write_json(recent_videos, json_file)
   logger::log_info(paste("Results saved as JSON:", json_file))
 
