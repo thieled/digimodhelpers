@@ -18,7 +18,9 @@ utils::globalVariables(c(
   "list_id",
   "id",
   "snippet",
-  "valid_json"
+  "valid_json",
+  "tags",
+  "statistics"
 ))
 
 

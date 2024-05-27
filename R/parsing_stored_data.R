@@ -417,7 +417,6 @@ parse_data <- function(dir) {
   ### Parse data from youtube
   if(files_df[["plat"]][[1]] %in% c("yt")){
 
-
     # Parse and bind jsons
     file_dt <- data.table::rbindlist(
       RcppSimdJson::fload(f,
@@ -425,8 +424,24 @@ parse_data <- function(dir) {
                           empty_object = data.frame()),
       fill = TRUE, use.names = T, idcol = "file")
 
+    # Function to safely extract and collapse tags
+    extract_and_collapse_tags <- function(snippet) {
+      tags <- snippet[["tags"]]
+      if (is.null(tags)) {
+        return(NA_character_)
+      } else {
+        return(paste(tags, collapse = ", "))
+      }
+    }
+
+    ## Tags
+    # Extract the collapsed tags and create the new column
+    file_dt[, tags := purrr::map_chr(snippet, extract_and_collapse_tags)]
+
     # Using map to filter elements with length greater than 1
     file_dt[, snippet := purrr::map(file_dt[, snippet], ~Filter(function(x) length(x) == 1, .x))]
+
+    ## Rest of snippet column
 
     # Unlist 'snippet' column
     file_dt[, snippet := purrr::map(file_dt[, snippet], ~ unlist(.x))]
@@ -436,16 +451,45 @@ parse_data <- function(dir) {
                                        snippet,
                                        names_sep = "_",
                                        names_repair = "minimal")
+    ## Statistics column
+
+    # Unlist 'statistics' column
+    file_dt[, statistics := purrr::map(file_dt[, statistics], ~ unlist(.x))]
+
+    # Unnest 'snippet' column
+    file_dt <- tidytable::unnest_wider(file_dt,
+                                       statistics,
+                                       names_sep = "_",
+                                       names_repair = "minimal")
 
     names(file_dt)
 
     # Define cols to keep
     required_cols <- c(
       "file",
-      "download_time",
+      "kind",
+      "etag",
       "id",
+
+      "tags",
+
       "snippet_publishedAt",
-      "snippet_channelId"
+      "snippet_channelId",
+      "snippet_title",
+      "snippet_description",
+      "snippet_channelTitle",
+      "snippet_categoryId",
+      "snippet_liveBroadcastContent",
+      "snippet_defaultLanguage",
+      "snippet_defaultAudioLanguage",
+      "statistics_viewCount",
+      "statistics_likeCount",
+      "statistics_favoriteCount",
+      "statistics_commentCount",
+
+      "download_time",
+      "download_time_zone",
+      "liveStreamingDetails"
     )
 
     keep_cols <- colnames(file_dt)[colnames(file_dt) %in% required_cols]
@@ -457,10 +501,36 @@ parse_data <- function(dir) {
     old_names <- c(
       "id",
       "snippet_publishedAt",
-      "snippet_channelId")
+      "snippet_channelId",
+      "snippet_title",
+      "snippet_description",
+      "snippet_channelTitle",
+      "snippet_categoryId",
+      "snippet_liveBroadcastContent",
+      "snippet_defaultLanguage",
+      "snippet_defaultAudioLanguage",
+      "statistics_viewCount",
+      "statistics_likeCount",
+      "statistics_favoriteCount",
+      "statistics_commentCount"
+    )
+
     new_names <- c("item_id",
-                   "published_time",
-                   "account_id")
+
+                   "published_at",
+                   "channel_id",
+                   "title",
+                   "description",
+                   "channel_title",
+                   "category_id",
+                   "live_broadcast",
+                   "default_language",
+                   "default_audio_language",
+                   "view_count",
+                   "like_count",
+                   "favorite_count",
+                   "comment_count"
+    )
 
     # Rename columns
     data.table::setnames(file_dt, old_names, new_names)
@@ -470,3 +540,6 @@ parse_data <- function(dir) {
 
   return(file_dt)
 }
+
+
+
