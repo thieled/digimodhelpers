@@ -20,7 +20,10 @@ utils::globalVariables(c(
   "snippet",
   "valid_json",
   "tags",
-  "statistics"
+  "statistics",
+  "download_time",
+  "download_time_zone",
+  "topLevelComment"
 ))
 
 

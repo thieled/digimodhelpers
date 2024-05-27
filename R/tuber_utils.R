@@ -231,3 +231,161 @@ get_playlist_items_FIX <- function(filter = NULL, part = "contentDetails",
 
   return(res)
 }
+
+
+
+
+#' Fetch YouTube Comments for a Video
+#'
+#' This function fetches comments for a specified YouTube video using the YouTube Data API.
+#' It retrieves comments in multiple pages and stops fetching when the specified maximum number
+#' of comments is reached. If an error occurs during the API call, the function stops and returns an error message.
+#'
+#' @param video_id A character string specifying the YouTube video ID.
+#' @param simplify A logical value indicating whether to simplify the results into a data table. Default is `TRUE`.
+#' @param max_n An integer specifying the maximum number of comments to retrieve. Default is `Inf`.
+#' @param verbose A logical value indicating whether to print messages about the fetching progress. Default is `TRUE`.
+#' @param ... Additional arguments passed to the `tuber:::tuber_GET` function.
+#' @return A list of comments or a data table if `simplify = TRUE`. Returns an error message if an error occurs.
+#' @export
+#' @examples
+#' \dontrun{
+#' comments <- get_comments_yt(video_id = "your_video_id", max_n = 100)
+#' }
+get_comments_yt <- function(video_id = NULL,
+                            simplify = TRUE,
+                            max_n = Inf,
+                            verbose = TRUE,
+                            ...){
+
+  # Function to fetch data for a single page
+  fetch_page <- function(page_token = NULL, ...) {
+    query_list <- list(
+      videoId = video_id,
+      part = "id,replies,snippet",
+      pageToken = page_token
+    )
+    tuber:::tuber_GET(path = "commentThreads", query = query_list, ...)
+  }
+
+  # Initialize an empty list to collect results
+  all_res <- list()
+
+  # Fetch the first page
+  if(verbose) message(paste0("Fetching comments for video ", video_id))
+  res <- tryCatch({
+    fetch_page(...)
+  }, error = function(e) {
+    stop(paste0("Error when fetching comments for ", video_id, ": ", e))
+    # Return NULL in case of error
+    return(NULL)
+  }
+  )
+
+  # Store download time
+  res <- c(res,
+           download_time = as.character(as.POSIXct(lubridate::now(), tz = "UTC")),
+           download_time_zone = "UTC",
+           download_software = "tuber",
+           yt_api = "v3")
+
+  # Create all results list
+  all_res <- append(all_res, list(res))
+
+  # Count observations
+  n_collected <- length(res$items)
+
+  # Fetch subsequent pages if they exist
+  page_token <- res$nextPageToken
+  while (is.character(page_token) && (n_collected <= max_n)) {
+    a_res <- fetch_page(page_token, ...)
+
+    a_res <- c(a_res,
+               download_time = as.character(as.POSIXct(lubridate::now(), tz = "UTC")),
+               download_time_zone = "UTC",
+               download_software = "tuber",
+               yt_api = "v3")
+
+    all_res <- append(all_res, list(a_res))
+
+    # Pagination token and count
+    n_collected <- n_collected + length(a_res$items)
+    page_token <- a_res$nextPageToken
+    if(verbose) message(paste0("Fetched n = ", n_collected, " comments for video ", video_id))
+  }
+
+  # If the last fetched page exceeds the max_n limit, truncate the extra items
+  if (n_collected > max_n) {
+
+    excess_items <- n_collected - max_n
+    last_page_index <- length(all_res)
+    all_res[[last_page_index]]$items <- utils::head(all_res[[last_page_index]]$items, -excess_items)
+  }
+
+  ### Reshape as data.table?
+
+  if(simplify){
+
+    # Function to move "download_time" to each item in the 'items' list
+    move_download_time <- function(l) {
+      # Extract top level info
+      download_time <- l[["download_time"]]
+      download_time_zone <- l[["download_time_zone"]]
+
+      # Add info on each element of items
+      l[["items"]] <- purrr::map(l[["items"]], ~{
+        .x[["download_time"]] <- download_time
+        .x[["download_time_zone"]] <- download_time_zone
+        .x
+      })
+
+      return(l)
+    }
+
+    # Apply this function to each top-level element in 'all_res'
+    all_res <- purrr::map(all_res, move_download_time)
+
+    # Extract the 'snippet' element and remove upper level (pagination)
+    items <- all_res|>
+      purrr::map(~.x$items) |>
+      purrr::flatten()
+
+    # Extract the 'snippet' elements
+    snippets <- items |>
+      purrr::map(~.x$snippet)
+
+    # Assign the id as name
+    names(snippets) <- items |>
+      purrr::map(~.x$id)
+
+    # Extract all elements except 'topLevelComment' and create a data.table
+    snippets_flat <- snippets |>
+      purrr::map(~.x[!names(.x) %in% c("topLevelComment")]) |>
+      data.table::rbindlist(fill = TRUE, use.names = TRUE, idcol = "id")
+
+    # Extract the 'topLevelComment' element from each snippet
+    toplevelcomments <- snippets |>
+      purrr::map(~.x$topLevelComment) |>
+      purrr::map(~.x$snippet)
+
+    # Bind topLevelComment
+    snippets_flat[, topLevelComment := toplevelcomments]
+    snippets_flat[, download_time := purrr::map(items, ~.x$download_time)]
+    snippets_flat[, download_time_zone := purrr::map(items, ~.x$download_time_zone)]
+
+    # Unlist 'snippet' column
+    snippets_flat[, topLevelComment := purrr::map(snippets_flat[, topLevelComment], ~ unlist(.x))]
+
+    # Unnest 'snippet' column
+    snippets_flat <- tidytable::unnest_wider(snippets_flat,
+                                             topLevelComment,
+                                             names_sep = "_",
+                                             names_repair = "minimal")
+
+    all_res <- snippets_flat
+
+  }
+
+  return(all_res)
+
+}
