@@ -339,6 +339,7 @@ find_latest <- function(path) {
 #' @return A data.table containing parsed data from the specified directory.
 #'
 #' @export
+
 parse_data <- function(dir) {
 
   if(!dir.exists(dir)) stop(paste0("There is no such directory ", dir))
@@ -424,6 +425,7 @@ parse_data <- function(dir) {
                           empty_object = data.frame()),
       fill = TRUE, use.names = T, idcol = "file")
 
+    ## Tags
     # Function to safely extract and collapse tags
     extract_and_collapse_tags <- function(snippet) {
       tags <- snippet[["tags"]]
@@ -433,8 +435,6 @@ parse_data <- function(dir) {
         return(paste(tags, collapse = ", "))
       }
     }
-
-    ## Tags
     # Extract the collapsed tags and create the new column
     file_dt[, tags := purrr::map_chr(snippet, extract_and_collapse_tags)]
 
@@ -462,7 +462,8 @@ parse_data <- function(dir) {
                                        names_sep = "_",
                                        names_repair = "minimal")
 
-    names(file_dt)
+
+    #names(file_dt)
 
     # Define cols to keep
     required_cols <- c(
@@ -488,8 +489,7 @@ parse_data <- function(dir) {
       "statistics_commentCount",
 
       "download_time",
-      "download_time_zone",
-      "liveStreamingDetails"
+      "download_time_zone"
     )
 
     keep_cols <- colnames(file_dt)[colnames(file_dt) %in% required_cols]
@@ -540,6 +540,8 @@ parse_data <- function(dir) {
 
   return(file_dt)
 }
+
+
 
 
 
