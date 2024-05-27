@@ -347,3 +347,163 @@ call_log_yt <- function(grid_df,
 }
 
 
+
+
+
+#' Call YouTube Comment API for Multiple Video IDs with Logging
+#'
+#' This function calls the YouTube Comment API for multiple video IDs, retrieves comments, and logs the process.
+#'
+#' @param video_ids A character vector containing YouTube video IDs for which comments need to be retrieved.
+#' @param data_dir Directory path where log files and fetched comments will be saved.
+#' @param auth A character string specifying the authentication method. Default is "key".
+#' @param simplify A logical value indicating whether to simplify the resulting data structure. Default is FALSE.
+#' @param max_n An integer specifying the maximum number of comments to fetch per video. Default is Inf.
+#' @param verbose A logical value indicating whether to print detailed progress messages. Default is TRUE.
+#' @param progress_bar A logical value indicating whether to display a progress bar. Default is TRUE.
+#' @param return_results A logical value indicating whether to return the fetched comments as a list. Default is TRUE.
+#'
+#' @return If \code{return_results = TRUE}, a list containing the fetched comments for each video ID; otherwise, NULL.
+#'
+#' @details This function iterates over the provided video IDs, calls the YouTube Comment API for each video,
+#'  retrieves comments, and saves the fetched comments to JSON files.
+#' It logs the process, including progress messages, warnings, and errors. If any error occurs during the process,
+#' it logs the error and returns NULL.
+#'
+#' @export
+#' @seealso \code{\link{get_comments_yt}}
+#'
+
+call_log_yt_comments <- function(video_ids,
+                                 data_dir = NULL,
+                                 auth = "key",
+                                 simplify = FALSE,
+                                 max_n = Inf,
+                                 verbose = TRUE,
+                                 progress_bar = TRUE,
+                                 return_results = TRUE
+){
+
+  # Check if data dir exists, create if not
+  if(!is.null(data_dir)){
+    if(!dir.exists(data_dir)){
+      dir.create(file.path(data_dir), recursive = TRUE, showWarnings = FALSE)
+    }
+  }
+
+  # Define log file
+  now <- format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
+  dir.create(file.path(data_dir, "/log"),  recursive = TRUE, showWarnings = FALSE)
+  log_file <- file.path(data_dir, "log", paste0("call_log_yt_", now, ".log"))
+
+  # Set up logging
+  logger::log_appender(logger::appender_file(log_file))
+  logger::log_info("Logging started.")
+
+  # Define a function to process one
+  process_one <- function(video_id,
+                          data_dir = data_dir,
+                          simplify = simplify,
+                          max_n = max_n,
+                          verbose = verbose,
+                          auth = auth
+  ) {
+    # Log row information
+    if(verbose) message(paste0("Get YT comments for ", video_id))
+    logger::log_info(paste0("Get YT comments for ", video_id))
+
+    result <- tryCatch(
+      {
+        # Call the API
+        digimodhelpers::get_comments_yt(
+          video_id = video_id,
+          simplify = simplify,
+          max_n = max_n,
+          verbose = verbose,
+          auth = auth
+        )
+      },
+      error = function(e) {
+        # Log errors
+        if(verbose){message(e$message)}
+        logger::log_error(paste("Error calling:", video_id, "Message:", e$message))
+        # Return NULL in case of error
+        return(NULL)
+      },
+      warning = function(w) {
+        if(verbose){message(w$message)}
+        logger::log_warn(paste("Warning calling", video_id, "Message:", w$message))
+        return(NULL)
+      }
+    )
+
+    ## Store results if not empty
+    if(!is.null(result) && length(result) > 0){
+
+      n_fetched <- result |> purrr::map(~length(.x$items)) |> unlist() |> sum()
+
+      file <- file.path(data_dir, paste0("yt_comm_", video_id, "_DL_",
+                                         sub("\\:", "m", sub("\\:", "h", lubridate::now(tzone = "UTC") |> lubridate::format_ISO8601())),
+                                         ".json"))
+
+      # Print message and log info
+      if(verbose){message(paste0("Fetched n = ", n_fetched, " comments. Saving to - ", file))}
+      logger::log_info(paste0("Fetched n = ", n_fetched, " comments. Saving to - ", file))
+
+      # Convert to json
+      js <- jsonlite::toJSON(result)
+      write(x = js, file = file)
+
+      return(result)  # Return the result
+
+    }else{
+      # Print message and log info
+      if(verbose) message(paste0("Fetched n = ", 0, "comments. Not saving."))
+      logger::log_info(paste0("Fetched n = ", 0, "comments. Not saving."))
+      return(NULL)
+    }
+
+  }
+
+
+  # Wrap function in safely
+  process_one_safe <- purrr::safely(process_one, otherwise = NULL)
+
+
+  # Use purrr::map to iterate over video ids
+  tryCatch({
+    results <- purrr::map(video_ids,
+                          data_dir = data_dir,
+                          simplify = simplify,
+                          max_n = max_n,
+                          verbose = verbose,
+                          auth = auth,
+                          .progress = progress_bar, function(...) {
+
+                            result <- process_one_safe(...)
+
+                            if (!is.null(result$error)) {
+                              if(verbose){message(paste("Error in 'get_comments_yt' Message:", result$error$message))}
+                              logger::log_error(paste("Error in 'get_comments_yt' Message:", result$error$message))
+                            }
+
+                            return(result$result) # Return the result portion of the list
+                          })
+  }, error = function(e) {
+    # Log errors
+    if(verbose){message(paste("Error in calling 'purrr::map.' Message:", e$message))}
+    logger::log_error(paste("Error in calling 'purrr::map.' Message:", e$message))
+    # Return NULL in case of error
+    return(NULL)
+  })
+
+  # Close the logging
+  logger::log_info("Logging completed.")
+  logger::log_appender(NULL)
+
+  if(return_results){
+    return(results)
+  }
+
+}
+

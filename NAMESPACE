@@ -3,6 +3,7 @@
 export(call_log_ct)
 export(call_log_tt)
 export(call_log_yt)
+export(call_log_yt_comments)
 export(create_call_grid)
 export(create_call_grid_tt)
 export(create_filename)
