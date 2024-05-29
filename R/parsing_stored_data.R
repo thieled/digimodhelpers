@@ -38,6 +38,9 @@ parse_filenames <- function(path,
 
   df <- parse_filename_strings(existing_jsons)
 
+  # Repalce 'full filepath' with actuall full path
+  df$full_filepath <- full_filepath
+
   return(df)
 
 }
@@ -54,7 +57,9 @@ parse_filenames <- function(path,
 #' \describe{
 #'   \item{\code{plat}}{A character vector representing the platform (e.g., "fb", "ig", "tt", "yt", "tg", "bc", "bs").}
 #'   \item{\code{country}}{A character vector representing the country code extracted from the filename.}
-#'   \item{\code{person}}{A character vector representing the person/party extracted from the filename.}
+#'   \item{\code{person}}{A character vector representing the country_party_account extracted from the filename.}
+#'   \item{\code{party}}{A character vector representing the party extracted from the filename.}
+#'   \item{\code{account_owner}}{A character vector representing the account extracted from the filename.}
 #'   \item{\code{from_date}}{A Date vector representing the start date extracted from the filename.}
 #'   \item{\code{from_datetime}}{A character vector representing the start datetime in ISO8601 format.}
 #'   \item{\code{to_date}}{A Date vector representing the end date extracted from the filename.}
@@ -123,11 +128,23 @@ parse_filename_strings <- function(filenames){
   # Country, Party, Person string
   person <- stringr::str_extract(cleaned_filename, pattern = "(?<=(fb|ig|tt|yt|tg|bc|bs)_).*(?=_FR)")
 
+  # Party and account
+  regpat <- "^.*?_(.*?)_(.*)$"
+
+  # Use regmatches and regexec to extract the matches
+  matches <- regmatches(person, regexec(regpat, person))
+
+  # Extract the party and account parts
+  party <- sapply(matches, function(x) ifelse(length(x) > 1, x[2], ""))
+  account_owner <- sapply(matches, function(x) ifelse(length(x) > 2, x[3], ""))
+
   # Create data.frame
   df <- tibble::tibble(
     plat,
     country,
     person,
+    party,
+    account_owner,
     from_date,
     from_datetime,
     to_date,

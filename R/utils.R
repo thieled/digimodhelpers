@@ -221,37 +221,31 @@ set_parentdir <- function(nodename_A = NULL,
 
 
 
-
 #' Create Breaks and Labels for Time Intervals
 #'
-#' This function generates a vector of breaks and corresponding labels for specified time intervals.
+#' This function constructs a vector of breaks and corresponding labels for specified time intervals.
 #'
-#' @param cutoff A numeric vector of cutoff values for the intervals. If empty, it defaults to `Inf`.
+#' @param cutoff A numeric vector of cutoff values for the intervals. If not provided, defaults to `NULL`.
 #'
 #' @return A list containing two elements:
 #' \itemize{
-#'   \item \code{breaks}: A numeric vector of break points including `-Inf` and the sorted \code{cutoff} values.
+#'   \item \code{breaks}: A numeric vector of break points including the first element of \code{cutoff} and the sorted \code{cutoff} values.
 #'   \item \code{labels}: A character vector of labels for the intervals.
 #' }
 #'
+#' @details
+#' If \code{cutoff} is \code{NULL} or empty, the function sets \code{cutoff} to \code{Inf}. It then constructs the breaks vector starting from the first element of \code{cutoff} and includes all elements of \code{cutoff}. The labels are constructed based on the intervals defined by \code{cutoff}.
+#'
 #' @examples
-#' # Example usage with specified cutoffs
-#' cutoff <- c(6, 24, 72, 168, 336, Inf)
+#' # Example with specified cutoffs
+#' cutoff <- c(6, 24, 72, 168, 336)
 #' result <- create_breaks(cutoff)
 #' print(result$breaks)
 #' print(result$labels)
-#'
-#' # Example usage with empty cutoffs
-#' empty_cutoff <- numeric(0)
-#' result_empty <- create_breaks(empty_cutoff)
-#' print(result_empty$breaks)
-#' print(result_empty$labels)
-#'
 #' @export
-create_breaks <- function(cutoff) {
-
+create_breaks <- function(cutoff = NULL) {
   # Check if cutoff is empty, and set it to Inf if it is
-  if (length(cutoff) == 0) {
+  if (is.null(cutoff) || length(cutoff) == 0) {
     cutoff <- c(Inf)
   } else {
     # Ensure cutoff is sorted in ascending order and contains Inf
@@ -259,17 +253,18 @@ create_breaks <- function(cutoff) {
   }
 
   # Construct breaks vector
-  breaks <- c(-Inf, cutoff)
+  breaks <- c(cutoff[1], cutoff)
 
   # Construct labels vector using purrr::map2
   labels <- purrr::map2_chr(
-    c(0, cutoff[-length(cutoff)]),  # Start of intervals
-    cutoff,                        # End of intervals
+    c(cutoff[1], cutoff[-length(cutoff)]),  # Start of intervals from the first element of cutoff
+    cutoff,                                 # End of intervals
     ~ paste0("T", match(.y, cutoff), "_", .x, "-", ifelse(.y == Inf, "Inf", .y), "h")
   )
 
   # Return a list containing breaks and labels
   list(breaks = breaks, labels = labels)
 }
+
 
 

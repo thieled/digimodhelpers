@@ -14,7 +14,9 @@ A tibble with the following columns:
 \describe{
 \item{\code{plat}}{A character vector representing the platform (e.g., "fb", "ig", "tt", "yt", "tg", "bc", "bs").}
 \item{\code{country}}{A character vector representing the country code extracted from the filename.}
-\item{\code{person}}{A character vector representing the person/party extracted from the filename.}
+\item{\code{person}}{A character vector representing the country_party_account extracted from the filename.}
+\item{\code{party}}{A character vector representing the party extracted from the filename.}
+\item{\code{account_owner}}{A character vector representing the account extracted from the filename.}
 \item{\code{from_date}}{A Date vector representing the start date extracted from the filename.}
 \item{\code{from_datetime}}{A character vector representing the start datetime in ISO8601 format.}
 \item{\code{to_date}}{A Date vector representing the end date extracted from the filename.}

@@ -4,32 +4,28 @@
 \alias{create_breaks}
 \title{Create Breaks and Labels for Time Intervals}
 \usage{
-create_breaks(cutoff)
+create_breaks(cutoff = NULL)
 }
 \arguments{
-\item{cutoff}{A numeric vector of cutoff values for the intervals. If empty, it defaults to \code{Inf}.}
+\item{cutoff}{A numeric vector of cutoff values for the intervals. If not provided, defaults to \code{NULL}.}
 }
 \value{
 A list containing two elements:
 \itemize{
-\item \code{breaks}: A numeric vector of break points including \code{-Inf} and the sorted \code{cutoff} values.
+\item \code{breaks}: A numeric vector of break points including the first element of \code{cutoff} and the sorted \code{cutoff} values.
 \item \code{labels}: A character vector of labels for the intervals.
 }
 }
 \description{
-This function generates a vector of breaks and corresponding labels for specified time intervals.
+This function constructs a vector of breaks and corresponding labels for specified time intervals.
+}
+\details{
+If \code{cutoff} is \code{NULL} or empty, the function sets \code{cutoff} to \code{Inf}. It then constructs the breaks vector starting from the first element of \code{cutoff} and includes all elements of \code{cutoff}. The labels are constructed based on the intervals defined by \code{cutoff}.
 }
 \examples{
-# Example usage with specified cutoffs
-cutoff <- c(6, 24, 72, 168, 336, Inf)
+# Example with specified cutoffs
+cutoff <- c(6, 24, 72, 168, 336)
 result <- create_breaks(cutoff)
 print(result$breaks)
 print(result$labels)
-
-# Example usage with empty cutoffs
-empty_cutoff <- numeric(0)
-result_empty <- create_breaks(empty_cutoff)
-print(result_empty$breaks)
-print(result_empty$labels)
-
 }
