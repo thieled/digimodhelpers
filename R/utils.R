@@ -23,7 +23,8 @@ utils::globalVariables(c(
   "statistics",
   "download_time",
   "download_time_zone",
-  "topLevelComment"
+  "topLevelComment",
+  "filepath"
 ))
 
 

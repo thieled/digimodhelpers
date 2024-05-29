@@ -406,6 +406,7 @@ parse_data <- function(dir = NULL, filepaths = NULL) {
 
   # extract the file paths
   f <- files_df[["full_filepath"]]
+  names(f) <- f
 
   ###  Parse data from crowdtangle
 
@@ -421,8 +422,11 @@ parse_data <- function(dir = NULL, filepaths = NULL) {
         purrr::map2(c("posts"), `[[`), # extract "posts"
       use.names = TRUE,
       fill = TRUE,
-      idcol = "file" # stores the filename
+      idcol = "filepath" # stores the filename
     )
+
+    # Store filename
+    file_dt[, file := basename(filepath)]
 
     # Unlist 'account' column
     file_dt[, account := purrr::map(file_dt[, account], ~ unlist(.x))]
@@ -477,7 +481,12 @@ parse_data <- function(dir = NULL, filepaths = NULL) {
       RcppSimdJson::fload(f,
                           empty_array = data.frame(),
                           empty_object = data.frame()),
-      fill = TRUE, use.names = T, idcol = "file")
+      fill = TRUE, use.names = T,
+      idcol = "filepath" # stores the filename
+    )
+
+    # Store filename
+    file_dt[, file := basename(filepath)]
 
     ## Tags
     # Function to safely extract and collapse tags
