@@ -2,27 +2,20 @@
 % Please edit documentation in R/utils.R
 \name{create_cutoffs}
 \alias{create_cutoffs}
-\title{Create Breaks and Labels for Time Intervals}
+\title{Create Cutoff Intervals for Time Differences}
 \usage{
 create_cutoffs(cutoff = NULL)
 }
 \arguments{
-\item{cutoff}{A numeric vector of cutoff values for the intervals. If not provided, defaults to \code{NULL}.}
+\item{cutoff}{A numeric vector specifying the cutoff values for the intervals. If not provided, it defaults to \code{Inf}.}
 }
 \value{
 A list containing two elements:
-\itemize{
-\item \code{cutoff}: A numeric vector of cutoff values for the intervals, sorted in ascending order and containing \code{Inf}.
-\item \code{labels}: A character vector of labels for the intervals.
-}
+\item{cutoff}{A numeric vector of the cutoff values including \code{-Inf} and \code{Inf} if not already present.}
+\item{labels}{A character vector of the labels for the intervals, starting from "T0".}
 }
 \description{
-This function constructs a vector of breaks and corresponding labels for specified time intervals.
-}
-\details{
-If \code{cutoff} is \code{NULL} or empty, the function sets \code{cutoff} to \code{Inf}.
-It then constructs the breaks vector starting from the first element of \code{cutoff} and
-includes all elements of \code{cutoff}. The labels are constructed based on the intervals
-defined by \code{cutoff}. If the start of the interval (\code{.x}) is less than 0 or equals
-\code{Inf}, no dash "-" is included in the label.
+This function generates cutoff intervals and corresponding labels for categorizing time differences.
+The labels start from "T0" and continue as "T1", "T2", etc. The intervals are specified by the \code{cutoff} parameter.
+The function ensures that intervals are properly labeled and that \code{-Inf} is used as the lower bound and \code{Inf} as the upper bound if not already included in the cutoff values.
 }

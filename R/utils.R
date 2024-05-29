@@ -265,25 +265,19 @@ set_parentdir <- function(nodename_A = NULL,
 
 
 
-#' Create Breaks and Labels for Time Intervals
+#' Create Cutoff Intervals for Time Differences
 #'
-#' This function constructs a vector of breaks and corresponding labels for specified time intervals.
+#' This function generates cutoff intervals and corresponding labels for categorizing time differences.
+#' The labels start from "T0" and continue as "T1", "T2", etc. The intervals are specified by the `cutoff` parameter.
+#' The function ensures that intervals are properly labeled and that `-Inf` is used as the lower bound and `Inf` as the upper bound if not already included in the cutoff values.
 #'
-#' @param cutoff A numeric vector of cutoff values for the intervals. If not provided, defaults to `NULL`.
+#' @param cutoff A numeric vector specifying the cutoff values for the intervals. If not provided, it defaults to `Inf`.
 #'
 #' @return A list containing two elements:
-#' \itemize{
-#'   \item \code{cutoff}: A numeric vector of cutoff values for the intervals, sorted in ascending order and containing \code{Inf}.
-#'   \item \code{labels}: A character vector of labels for the intervals.
-#' }
+#' \item{cutoff}{A numeric vector of the cutoff values including `-Inf` and `Inf` if not already present.}
+#' \item{labels}{A character vector of the labels for the intervals, starting from "T0".}
 #'
-#' @details
-#' If \code{cutoff} is \code{NULL} or empty, the function sets \code{cutoff} to \code{Inf}.
-#' It then constructs the breaks vector starting from the first element of \code{cutoff} and
-#' includes all elements of \code{cutoff}. The labels are constructed based on the intervals
-#' defined by \code{cutoff}. If the start of the interval (\code{.x}) is less than 0 or equals
-#'  \code{Inf}, no dash "-" is included in the label.
-
+#'
 #' @export
 create_cutoffs <- function(cutoff = NULL) {
   # Check if cutoff is empty, and set it to Inf if it is
@@ -293,14 +287,22 @@ create_cutoffs <- function(cutoff = NULL) {
     # Ensure cutoff is sorted in ascending order and contains Inf
     cutoff <- sort(cutoff)
   }
-  # Construct breaks vector
-  breaks <- cutoff
+
+  # Add -Inf at the beginning if not present
+  if (!is.infinite(cutoff[1])) {
+    cutoff <- c(-Inf, cutoff)
+  }
+
+  # Ensure Inf is present at the end
+  if (!is.infinite(cutoff[length(cutoff)])) {
+    cutoff <- c(cutoff, Inf)
+  }
 
   # Construct labels vector using purrr::map2
   labels <- purrr::map2_chr(
-    c(cutoff[1], cutoff[-length(cutoff)]),  # Start of intervals
-    cutoff,                        # End of intervals
-    ~ paste0("T", match(.y, cutoff), "_", ifelse((.x < 0 || .x == Inf), "0", .x), if (.x < 0) "" else "-", ifelse(.y == Inf, "Inf", .y), "h")
+    cutoff[-length(cutoff)],  # Start of intervals
+    cutoff[-1],               # End of intervals
+    ~ paste0("T", match(.x, cutoff) - 1, "_", ifelse((.x == -Inf), "0", .x), "-", ifelse(.y == Inf, "Inf", .y), "h")
   )
 
   # Return a list containing breaks and labels
