@@ -29,22 +29,46 @@ utils::globalVariables(c(
 
 
 
-
 #' Remove Invalid JSON Files
 #'
-#' This function checks JSON files in a specified directory for validity. If any invalid JSON files are found, they are moved to a sub-directory named "corrupted_files" within the specified directory.
+#' This function removes invalid JSON files by either moving them to a "corrupted_files" sub-directory
+#' or raising an error if no JSON files are found or if the directory does not exist.
 #'
-#' @param dir A character string specifying the directory containing the JSON files.
-#' @return This function does not return anything; it removes invalid JSON files by moving them to the "corrupted_files" sub-directory.
+#' @param dir (character) Path to the directory containing JSON files.
+#' @param filepaths (character) Vector of file paths to specific JSON files. Default is NULL.
+#' @return NULL
+#' @details The function checks if either a directory containing JSON files ('dir') or direct file paths to JSON files ('filepaths') are provided. It then proceeds to validate the JSON files using RcppSimdJson::validateJSON. Invalid JSON files are moved to a "corrupted_files" sub-directory created in the same directory as the original file.
+#'
 #' @export
-remove_invalid_jsons <- function(dir) {
+remove_invalid_jsons <- function(dir = NULL, filepaths = NULL) {
+
+  # Check if either dir or filepaths are provided
+  if (is.null(dir) && is.null(filepaths)) {
+    stop("Either 'dir' or 'filepaths' must be provided.")
+  }
+
   # Check if directory exists
-  if (!dir.exists(dir)) {
+  if (!is.null(dir) && !dir.exists(dir)) {
     stop("Directory does not exist.")
   }
 
-  # Find JSON files
-  json_paths <- Sys.glob(paste0(dir, "/*.json"))
+  # Initialize vector to store JSON paths
+  json_paths <- character(0)
+
+  # If filepaths argument is provided, append them to json_paths
+  if (!is.null(filepaths)) {
+    json_paths <- c(json_paths, filepaths)
+  }
+
+  # Find JSON files in the directory
+  if (!is.null(dir)) {
+    json_paths <- c(json_paths, Sys.glob(file.path(dir, "*.json")))
+  }
+
+  # Check if any JSON files found
+  if (length(json_paths) == 0) {
+    stop("No JSON files found.")
+  }
 
   # Create a data frame to store JSON file paths
   json_df <- data.frame(json_paths = json_paths)
@@ -61,76 +85,104 @@ remove_invalid_jsons <- function(dir) {
   # Find invalid JSON files
   if (any(json_df$valid_json == FALSE)) {
     # Create 'corrupted_files' sub-directory if it does not exist
-    corrupted_dir <- file.path(dir, "corrupted_files")
-    if (!dir.exists(corrupted_dir)) {
-      dir.create(corrupted_dir)
-    }
-
-    # Filter out invalid files
-    invalid_files <- json_df[json_df$valid_json == FALSE, , drop = FALSE]
-
-    # Move invalid files to 'corrupted_files' sub-directory
-    purrr::walk(invalid_files$json_paths, function(file){
-      file.rename(file, file.path(corrupted_dir, basename(file)))
+    purrr::walk(json_df$json_paths[!json_df$valid_json], function(file_path) {
+      parent_dir <- dirname(file_path)
+      corrupted_dir <- file.path(parent_dir, "corrupted_files")
+      if (!dir.exists(corrupted_dir)) {
+        dir.create(corrupted_dir, recursive = TRUE)
+      }
+      # Move invalid file to 'corrupted_files' sub-directory
+      file.rename(file_path, file.path(corrupted_dir, basename(file_path)))
     })
 
     # Warning message
-    warning(paste0("Invalid .json files detected in ", dir, ". Moved to '", corrupted_dir, "'. Count: ", nrow(invalid_files)))
+    warning(paste0("Invalid .json files detected. Moved to 'corrupted_files' sub-directory."))
   }
 }
 
 
 
 
-#' Remove and Move Corrupted JSON Files
+#' Remove JSON Files with Error Status
 #'
-#' This function scans a specified directory for JSON files, checks their validity based on the `status` field,
-#' and moves any corrupted files (with `status` not equal to 200) to a subdirectory named `corrupted_files`.
+#' This function removes JSON files with error status (status != 200) by either moving them to a "corrupted_files" sub-directory
+#' or raising an error if no JSON files are found or if the directory does not exist.
 #'
-#' @param dir A character string specifying the directory containing the JSON files to be checked.
-#' @return This function does not return a value. It moves corrupted JSON files to a subdirectory
-#' and prints a warning message if any corrupted files are found.
-#' @details The function first verifies the existence of the specified directory. It then searches
-#' for all JSON files in the directory and validates them based on their `status` field. JSON files
-#' with a `status` field not equal to 200 are considered corrupted and moved to a `corrupted_files`
-#' subdirectory within the specified directory.
+#' @param dir (character) Path to the directory containing JSON files.
+#' @param filepaths (character) Vector of file paths to specific JSON files.
+#' @return NULL
+#' @details The function checks if either a directory containing JSON files ('dir') or direct file paths to JSON files ('filepaths') are provided. It then proceeds to load the JSON files and checks if they have an error status. Files with error status are moved to a "corrupted_files" sub-directory created in the same directory as the original file.
+#'
+#' @examples
+#' # Remove JSON files with error status from a directory
+#' remove_error_jsons("path/to/directory")
+#'
+#' # Remove JSON files with error status using specific file paths
+#' remove_error_jsons(filepaths = c("path/to/file1.json", "path/to/file2.json"))
+#'
 #' @export
-remove_error_jsons <- function(dir) {
+remove_error_jsons <- function(dir = NULL, filepaths = NULL) {
+  # Check if either dir or filepaths are provided
+  if (is.null(dir) && is.null(filepaths)) {
+    stop("Either 'dir' or 'filepaths' must be provided.")
+  }
+
   # Check if directory exists
-  if (!dir.exists(dir)) {
+  if (!is.null(dir) && !dir.exists(dir)) {
     stop("Directory does not exist.")
   }
 
-  # Find JSON files
-  json_paths <- Sys.glob(paste0(dir, "/*.json"))
+  # Initialize vector to store JSON paths
+  json_paths <- character(0)
+
+  # If filepaths argument is provided, append them to json_paths
+  if (!is.null(filepaths)) {
+    json_paths <- c(json_paths, filepaths)
+  }
+
+  # Find JSON files in the directory
+  if (!is.null(dir)) {
+    json_paths <- c(json_paths, Sys.glob(file.path(dir, "*.json")))
+  }
+
+  # Check if any JSON files found
+  if (length(json_paths) == 0) {
+    stop("No JSON files found.")
+  }
 
   # Create a data frame to store JSON file paths
   json_df <- data.frame(json_paths = json_paths)
 
-  # Function to safely validate JSON files
-  validate_status_safely <- purrr::safely(function(x) RcppSimdJson::fload(x) |> purrr::map2(c("status"), `[[`) == 200, otherwise = FALSE)
+  # Function to check if JSON files have error status
+  check_error_status <- function(file_path) {
+    status <- tryCatch({
+      json_data <- RcppSimdJson::fload(file_path)
+      status <- json_data$status
+      status
+    }, error = function(e) {
+      return(NA)
+    })
+    return(status != 200)
+  }
 
-  # Validate JSON files and store the results
-  json_df$valid_json <- validate_status_safely(json_df$json_paths)$result
+  # Validate JSON files for error status and store the results
+  json_df$has_error_status <- purrr::map_lgl(json_df$json_paths, check_error_status)
 
-  # Find invalid JSON files
-  if (any(json_df$valid_json == FALSE)) {
+  # Find JSON files with error status
+  if (any(json_df$has_error_status)) {
     # Create 'corrupted_files' sub-directory if it does not exist
-    corrupted_dir <- file.path(dir, "corrupted_files")
-    if (!dir.exists(corrupted_dir)) {
-      dir.create(corrupted_dir)
-    }
-
-    # Filter out invalid files
-    invalid_files <- json_df[json_df$valid_json == FALSE, , drop = FALSE]
-
-    # Move invalid files to 'corrupted_files' sub-directory
-    purrr::walk(invalid_files$json_paths, function(file) {
-      file.rename(file, file.path(corrupted_dir, basename(file)))
+    purrr::walk(json_df$json_paths[json_df$has_error_status], function(file_path) {
+      parent_dir <- dirname(file_path)
+      corrupted_dir <- file.path(parent_dir, "corrupted_files")
+      if (!dir.exists(corrupted_dir)) {
+        dir.create(corrupted_dir, recursive = TRUE)
+      }
+      # Move files with error status to 'corrupted_files' sub-directory
+      file.rename(file_path, file.path(corrupted_dir, basename(file_path)))
     })
 
     # Warning message
-    warning(paste0("JSON files with Error status (!=200) found in ", dir, ". Moved to '", corrupted_dir, "'. Count: ", nrow(invalid_files)))
+    warning(paste0("JSON files with error status found. Moved to 'corrupted_files' sub-directory."))
   }
 }
 

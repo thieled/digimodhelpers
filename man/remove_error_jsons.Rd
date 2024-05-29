@@ -4,10 +4,12 @@
 \alias{remove_error_jsons}
 \title{Remove and Move Corrupted JSON Files}
 \usage{
-remove_error_jsons(dir)
+remove_error_jsons(dir, filepaths = NULL)
 }
 \arguments{
 \item{dir}{A character string specifying the directory containing the JSON files to be checked.}
+
+\item{filepaths}{A character string specifying the full file paths the JSON files. Default is NULL.}
 }
 \value{
 This function does not return a value. It moves corrupted JSON files to a subdirectory

@@ -4,10 +4,12 @@
 \alias{remove_invalid_jsons}
 \title{Remove Invalid JSON Files}
 \usage{
-remove_invalid_jsons(dir)
+remove_invalid_jsons(dir, filepaths = NULL)
 }
 \arguments{
 \item{dir}{A character string specifying the directory containing the JSON files.}
+
+\item{filepaths}{A character string specifying the full file paths the JSON files. Default is NULL.}
 }
 \value{
 This function does not return anything; it removes invalid JSON files by moving them to the "corrupted_files" sub-directory.
