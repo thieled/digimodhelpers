@@ -27,7 +27,9 @@ Imports:
     readr,
     httr,
     plyr,
-    utils
+    utils,
+    traktok
 Remotes: 
     JBGruber/crowdtangler,
+    JBGruber/traktok,
     gojiplus/tuber

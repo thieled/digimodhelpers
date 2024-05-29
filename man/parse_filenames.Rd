@@ -4,10 +4,12 @@
 \alias{parse_filenames}
 \title{Parse filenames of JSON files containing social media data}
 \usage{
-parse_filenames(path, recursive = FALSE)
+parse_filenames(path = NULL, filepaths = NULL, recursive = FALSE)
 }
 \arguments{
 \item{path}{A character string specifying the directory path where the JSON files are located.}
+
+\item{filepaths}{A character vector of file paths to JSON files. If specified, overrides the \code{path} parameter.}
 
 \item{recursive}{Logical indicating whether to search for files recursively in subdirectories. Default is \code{FALSE}.}
 }

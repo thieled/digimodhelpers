@@ -3,42 +3,64 @@
 #' This function parses information stored in the filenames of JSON files containing collected social media data.
 #'
 #' @param path A character string specifying the directory path where the JSON files are located.
+#' @param filepaths A character vector of file paths to JSON files. If specified, overrides the `path` parameter.
 #' @param recursive Logical indicating whether to search for files recursively in subdirectories. Default is \code{FALSE}.
 #'
 #' @return A data frame containing parsed information from the filenames of the JSON files.
 #'
 #' @export
-parse_filenames <- function(path,
+parse_filenames <- function(path = NULL,
+                            filepaths = NULL,
                             recursive = FALSE) {
-  # Get full filepath
-  if (dir.exists(path)[[1]]) {
-    full_filepath <- list.files(
-      path = path,
-      pattern = ".json$",
-      recursive = recursive,
-      full.names = TRUE,
-      ignore.case = TRUE
-    )
+
+
+  # Check if either dir or filepaths are provided
+  if (is.null(path) && is.null(filepaths)) {
+    stop("Either 'path' or 'filepaths' must be provided.")
   }
 
-  # Get filename only
-  if (dir.exists(path)[[1]]) {
-    existing_jsons <- list.files(
-      path = path,
-      pattern = ".json$",
-      recursive = recursive,
-      full.names = FALSE,
-      ignore.case = TRUE
-    )
+  # Check if directory exists
+  if (!is.null(path) && !dir.exists(path)) {
+    stop(paste0("There is no such directory ", path))
   }
 
 
-  df <- parse_filename_strings(existing_jsons)
+  # Call "parse filenames" function from digimodhelpers - extract info from json filenames
+  if (!is.null(path)) {
 
-  # Repalce 'full filepath' with actuall full path
-  df$full_filepath <- full_filepath
+    # Get full filepath
+    if (dir.exists(path)[[1]]) {
+      full_filepath <- list.files(
+        path = path,
+        pattern = ".json$",
+        recursive = recursive,
+        full.names = TRUE,
+        ignore.case = TRUE
+      )
+    }
 
-  return(df)
+    # Get filename only
+    if (dir.exists(path)[[1]]) {
+      existing_jsons <- list.files(
+        path = path,
+        pattern = ".json$",
+        recursive = recursive,
+        full.names = FALSE,
+        ignore.case = TRUE
+      )
+    }
+
+    files_df <- parse_filename_strings(filepaths = existing_jsons)
+    files_df$full_filepath <- full_filepath
+
+
+  } else {
+
+    files_df <- parse_filename_strings(filepaths = filepaths)
+
+ }
+
+  return(files_df)
 
 }
 
@@ -48,7 +70,7 @@ parse_filenames <- function(path,
 #'
 #' This function parses a vector of filenames to extract various metadata components such as platform, dates, times, country, and person/party information. The metadata is returned in a tidy data frame.
 #'
-#' @param filenames A character vector of file paths or filenames to be parsed.
+#' @param filepaths A character vector of file paths or filenames to be parsed.
 #'
 #' @return A tibble with the following columns:
 #' \describe{
@@ -70,9 +92,9 @@ parse_filenames <- function(path,
 #'
 #' @export
 
-parse_filename_strings <- function(filenames){
+parse_filename_strings <- function(filepaths){
 
-  basenames <-basename(filenames)
+  basenames <-basename(filepaths)
 
   # Drop the ct_pull prefix
   cleaned_filename <- gsub(".*ct_pull_", "", basenames, perl = TRUE)
@@ -149,7 +171,7 @@ parse_filename_strings <- function(filenames){
     dl_date,
     dl_datetime,
     basenames,
-    full_filepath = filenames
+    full_filepath = filepaths
   )
 
   return(df)
@@ -401,7 +423,7 @@ parse_data <- function(dir = NULL, filepaths = NULL) {
   if (!is.null(dir)) {
     files_df <- parse_filenames(path = dir)
   } else {
-    files_df <- parse_filename_strings(filenames = filepaths)
+    files_df <- parse_filename_strings(filepaths = filepaths)
   }
 
   # extract the file paths

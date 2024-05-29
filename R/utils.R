@@ -24,7 +24,11 @@ utils::globalVariables(c(
   "download_time",
   "download_time_zone",
   "topLevelComment",
-  "filepath"
+  "filepath",
+  "diff_time_h",
+  "difftime_category",
+  "save_dir",
+  "item_id"
 ))
 
 
@@ -282,7 +286,7 @@ set_parentdir <- function(nodename_A = NULL,
 #' @export
 create_cutoffs <- function(cutoff = NULL) {
   # Check if cutoff is empty, and set it to Inf if it is
-  if (length(cutoff) == 0) {
+  if (length(cutoff) == 0 || is.null(cutoff)) {
     cutoff <- c(Inf)
   } else {
     # Ensure cutoff is sorted in ascending order and contains Inf
@@ -290,7 +294,7 @@ create_cutoffs <- function(cutoff = NULL) {
   }
 
   # Add -Inf at the beginning if not present
-  if (!is.infinite(cutoff[1])) {
+  if (!cutoff[1] < 0) {
     cutoff <- c(-Inf, cutoff)
   }
 
@@ -303,11 +307,10 @@ create_cutoffs <- function(cutoff = NULL) {
   labels <- purrr::map2_chr(
     cutoff[-length(cutoff)],  # Start of intervals
     cutoff[-1],               # End of intervals
-    ~ paste0("T", match(.x, cutoff) - 1, "_", ifelse((.x == -Inf), "0", .x), "-", ifelse(.y == Inf, "Inf", .y), "h")
+    ~ paste0("t", match(.x, cutoff) - 1, "_", ifelse((.x == -Inf), "0", .x), "_", ifelse(.y == Inf, "Inf", .y), "h")
   )
 
   # Return a list containing breaks and labels
   list(cutoff = cutoff, labels = labels)
 }
-
 

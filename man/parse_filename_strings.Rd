@@ -4,10 +4,10 @@
 \alias{parse_filename_strings}
 \title{Parse Filename Strings to Extract Metadata}
 \usage{
-parse_filename_strings(filenames)
+parse_filename_strings(filepaths)
 }
 \arguments{
-\item{filenames}{A character vector of file paths or filenames to be parsed.}
+\item{filepaths}{A character vector of file paths or filenames to be parsed.}
 }
 \value{
 A tibble with the following columns:
