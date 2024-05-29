@@ -445,6 +445,7 @@ parse_data <- function(dir = NULL, filepaths = NULL) {
     # Define columns to keep
     keep_cols <- colnames(file_dt)[colnames(file_dt) %in% c(
       "file",
+      "filepath",
       "date",
       "account_id",
       "account_handle",
@@ -531,6 +532,7 @@ parse_data <- function(dir = NULL, filepaths = NULL) {
     # Define cols to keep
     required_cols <- c(
       "file",
+      "filepath",
       "kind",
       "etag",
       "id",
