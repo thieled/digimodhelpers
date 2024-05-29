@@ -35,8 +35,45 @@ parse_filenames <- function(path,
     )
   }
 
+
+  df <- parse_filename_strings(existing_jsons)
+
+  return(df)
+
+}
+
+
+
+#' Parse Filename Strings to Extract Metadata
+#'
+#' This function parses a vector of filenames to extract various metadata components such as platform, dates, times, country, and person/party information. The metadata is returned in a tidy data frame.
+#'
+#' @param filenames A character vector of file paths or filenames to be parsed.
+#'
+#' @return A tibble with the following columns:
+#' \describe{
+#'   \item{\code{plat}}{A character vector representing the platform (e.g., "fb", "ig", "tt", "yt", "tg", "bc", "bs").}
+#'   \item{\code{country}}{A character vector representing the country code extracted from the filename.}
+#'   \item{\code{person}}{A character vector representing the person/party extracted from the filename.}
+#'   \item{\code{from_date}}{A Date vector representing the start date extracted from the filename.}
+#'   \item{\code{from_datetime}}{A character vector representing the start datetime in ISO8601 format.}
+#'   \item{\code{to_date}}{A Date vector representing the end date extracted from the filename.}
+#'   \item{\code{to_datetime}}{A character vector representing the end datetime in ISO8601 format.}
+#'   \item{\code{dl_date}}{A Date vector representing the download date extracted from the filename.}
+#'   \item{\code{dl_datetime}}{A character vector representing the download datetime in ISO8601 format.}
+#'   \item{\code{basenames}}{A character vector of the base names of the filenames.}
+#'   \item{\code{full_filepath}}{A character vector of the full file paths provided as input.}
+#' }
+#'
+#'
+#' @export
+
+parse_filename_strings <- function(filenames){
+
+  basenames <-basename(filenames)
+
   # Drop the ct_pull prefix
-  cleaned_filename <- gsub(".*ct_pull_", "", existing_jsons, perl = TRUE)
+  cleaned_filename <- gsub(".*ct_pull_", "", basenames, perl = TRUE)
 
   # Platform
   plat <- stringr::str_extract(cleaned_filename, pattern = "^(fb|ig|tt|yt|tg|bc|bs)")
@@ -97,11 +134,14 @@ parse_filenames <- function(path,
     to_datetime,
     dl_date,
     dl_datetime,
-    full_filepath
+    basenames,
+    full_filepath = filenames
   )
 
   return(df)
 }
+
+
 
 
 

@@ -218,3 +218,58 @@ set_parentdir <- function(nodename_A = NULL,
   return(par_dir)
 }
 
+
+
+
+
+#' Create Breaks and Labels for Time Intervals
+#'
+#' This function generates a vector of breaks and corresponding labels for specified time intervals.
+#'
+#' @param cutoff A numeric vector of cutoff values for the intervals. If empty, it defaults to `Inf`.
+#'
+#' @return A list containing two elements:
+#' \itemize{
+#'   \item \code{breaks}: A numeric vector of break points including `-Inf` and the sorted \code{cutoff} values.
+#'   \item \code{labels}: A character vector of labels for the intervals.
+#' }
+#'
+#' @examples
+#' # Example usage with specified cutoffs
+#' cutoff <- c(6, 24, 72, 168, 336, Inf)
+#' result <- create_breaks(cutoff)
+#' print(result$breaks)
+#' print(result$labels)
+#'
+#' # Example usage with empty cutoffs
+#' empty_cutoff <- numeric(0)
+#' result_empty <- create_breaks(empty_cutoff)
+#' print(result_empty$breaks)
+#' print(result_empty$labels)
+#'
+#' @export
+create_breaks <- function(cutoff) {
+
+  # Check if cutoff is empty, and set it to Inf if it is
+  if (length(cutoff) == 0) {
+    cutoff <- c(Inf)
+  } else {
+    # Ensure cutoff is sorted in ascending order and contains Inf
+    cutoff <- sort(cutoff)
+  }
+
+  # Construct breaks vector
+  breaks <- c(-Inf, cutoff)
+
+  # Construct labels vector using purrr::map2
+  labels <- purrr::map2_chr(
+    c(0, cutoff[-length(cutoff)]),  # Start of intervals
+    cutoff,                        # End of intervals
+    ~ paste0("T", match(.y, cutoff), "_", .x, "-", ifelse(.y == Inf, "Inf", .y), "h")
+  )
+
+  # Return a list containing breaks and labels
+  list(breaks = breaks, labels = labels)
+}
+
+
