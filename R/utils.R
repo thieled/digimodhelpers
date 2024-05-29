@@ -314,3 +314,28 @@ create_cutoffs <- function(cutoff = NULL) {
   list(cutoff = cutoff, labels = labels)
 }
 
+
+
+
+#' Create Directories if They Do Not Exist
+#'
+#' This function takes a vector of directory paths and creates those directories if they do not already exist.
+#'
+#' @param dirs A character vector of directory paths to create. Default is `NULL`.
+#'
+#' @details The function ensures that all provided directory paths are unique before attempting to create them.
+#' It uses `purrr::walk` to iterate over each directory path and create the directory if it does not exist.
+#' If a directory already exists, it is skipped.
+#'
+#' @return This function does not return any value. It is called for its side effect of creating directories.
+#' @export
+create_dirs_if <- function(dirs = NULL){
+
+  dirs <- unique(dirs)
+
+  create_dir_if <- function(dir) if(!dir.exists(dir)) dir.create(file.path(dir), recursive = TRUE, showWarnings = FALSE)
+
+  purrr::walk(dirs, create_dir_if)
+
+}
+

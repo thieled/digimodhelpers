@@ -216,6 +216,8 @@ call_log_yt <- function(grid_df,
   if(!dir.exists(grid_df$data[[1]])){
     dir.create(file.path(grid_df$data[[1]]), recursive = TRUE, showWarnings = FALSE)
   }
+  #create_dirs_if(dirs = grid_df$data)
+
 
   # Define log file
   now <- format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
