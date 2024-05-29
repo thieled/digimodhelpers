@@ -17,7 +17,3 @@ A data frame containing parsed information from the filenames of the JSON files.
 \description{
 This function parses information stored in the filenames of JSON files containing collected social media data.
 }
-\examples{
-parse_filenames(path = ".")
-
-}

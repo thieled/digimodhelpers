@@ -4,16 +4,17 @@
 \alias{remove_invalid_jsons}
 \title{Remove Invalid JSON Files}
 \usage{
-remove_invalid_jsons(dir, filepaths = NULL)
+remove_invalid_jsons(dir = NULL, filepaths = NULL)
 }
 \arguments{
-\item{dir}{A character string specifying the directory containing the JSON files.}
+\item{dir}{(character) Path to the directory containing JSON files.}
 
-\item{filepaths}{A character string specifying the full file paths the JSON files. Default is NULL.}
-}
-\value{
-This function does not return anything; it removes invalid JSON files by moving them to the "corrupted_files" sub-directory.
+\item{filepaths}{(character) Vector of file paths to specific JSON files. Default is NULL.}
 }
 \description{
-This function checks JSON files in a specified directory for validity. If any invalid JSON files are found, they are moved to a sub-directory named "corrupted_files" within the specified directory.
+This function removes invalid JSON files by either moving them to a "corrupted_files" sub-directory
+or raising an error if no JSON files are found or if the directory does not exist.
+}
+\details{
+The function checks if either a directory containing JSON files ('dir') or direct file paths to JSON files ('filepaths') are provided. It then proceeds to validate the JSON files using RcppSimdJson::validateJSON. Invalid JSON files are moved to a "corrupted_files" sub-directory created in the same directory as the original file.
 }

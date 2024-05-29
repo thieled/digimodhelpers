@@ -16,10 +16,3 @@ A data.table with columns representing account details and the latest file infor
 This function parses the latest files for each account found in the specified path.
 It returns a data.table containing the latest file for each unique account.
 }
-\examples{
-\dontrun{
-# Provide a valid path to the function
-latest_files <- find_latest("/path/to/directory")
-}
-
-}

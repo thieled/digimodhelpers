@@ -113,13 +113,6 @@ remove_invalid_jsons <- function(dir = NULL, filepaths = NULL) {
 #' @return NULL
 #' @details The function checks if either a directory containing JSON files ('dir') or direct file paths to JSON files ('filepaths') are provided. It then proceeds to load the JSON files and checks if they have an error status. Files with error status are moved to a "corrupted_files" sub-directory created in the same directory as the original file.
 #'
-#' @examples
-#' # Remove JSON files with error status from a directory
-#' remove_error_jsons("path/to/directory")
-#'
-#' # Remove JSON files with error status using specific file paths
-#' remove_error_jsons(filepaths = c("path/to/file1.json", "path/to/file2.json"))
-#'
 #' @export
 remove_error_jsons <- function(dir = NULL, filepaths = NULL) {
   # Check if either dir or filepaths are provided

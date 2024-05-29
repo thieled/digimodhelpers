@@ -7,9 +7,6 @@
 #'
 #' @return A data frame containing parsed information from the filenames of the JSON files.
 #'
-#' @examples
-#' parse_filenames(path = ".")
-#'
 #' @export
 parse_filenames <- function(path,
                             recursive = FALSE) {
@@ -178,11 +175,6 @@ parse_filename_strings <- function(filenames){
 #' Next, it parses the data from CrowdTangle or YouTube depending on the platform, and extracts required columns.
 #' Finally, it renames specific columns to standardize column names across platforms.
 #'
-#' @examples
-#' \dontrun{
-#' parsed_data <- parse_latest("/path/to/data/directory")
-#' }
-#'
 #' @import data.table
 #'
 #' @export
@@ -349,13 +341,6 @@ parse_latest <- function(path) {
 #' @param path A character string specifying the directory path where the files are located.
 #' @return A data.table with columns representing account details and the latest file information.
 #' @export
-#' @examples
-#' \dontrun{
-#' # Provide a valid path to the function
-#' latest_files <- find_latest("/path/to/directory")
-#' }
-#'
-#' @export
 find_latest <- function(path) {
   if (!dir.exists(path)) {
     stop("Path does not exist. Please provide a valid path.")
@@ -391,21 +376,33 @@ find_latest <- function(path) {
 #' from them. Depending on the platform (Facebook, Instagram, or YouTube), it parses the data accordingly using the
 #' appropriate methods.
 #'
-#' @param dir A character string specifying the directory from which data needs to be parsed.
+#' @param dir A character string specifying the directory from which data needs to be parsed. Default is NULL.
+#' @param filepaths A character vector specifying the filepaths to be parsed. Default is NULL.
 #'
-#' @return A data.table containing parsed data from the specified directory.
+#' @return A data.table containing parsed data from the specified directory or filepaths.
 #'
 #' @export
+parse_data <- function(dir = NULL, filepaths = NULL) {
 
-parse_data <- function(dir) {
+  # Check if either dir or filepaths are provided
+  if (is.null(dir) && is.null(filepaths)) {
+    stop("Either 'dir' or 'filepaths' must be provided.")
+  }
 
-  if(!dir.exists(dir)) stop(paste0("There is no such directory ", dir))
+  # Check if directory exists
+  if (!is.null(dir) && !dir.exists(dir)) {
+    stop(paste0("There is no such directory ", dir))
+  }
 
-  # Check path for invalid .jsons - and move invalid ones into subfolder
-  remove_invalid_jsons(dir)
+  # Check and remove invalid JSONs
+  remove_invalid_jsons(dir = dir, filepaths = filepaths)
 
   # Call "parse filenames" function from digimodhelpers - extract info from json filenames
-  files_df <- parse_filenames(dir)
+  if (!is.null(dir)) {
+    files_df <- parse_filenames(path = dir)
+  } else {
+    files_df <- parse_filename_strings(filenames = filepaths)
+  }
 
   # extract the file paths
   f <- files_df[["full_filepath"]]

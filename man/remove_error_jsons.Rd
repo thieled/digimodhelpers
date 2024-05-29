@@ -2,26 +2,19 @@
 % Please edit documentation in R/utils.R
 \name{remove_error_jsons}
 \alias{remove_error_jsons}
-\title{Remove and Move Corrupted JSON Files}
+\title{Remove JSON Files with Error Status}
 \usage{
-remove_error_jsons(dir, filepaths = NULL)
+remove_error_jsons(dir = NULL, filepaths = NULL)
 }
 \arguments{
-\item{dir}{A character string specifying the directory containing the JSON files to be checked.}
+\item{dir}{(character) Path to the directory containing JSON files.}
 
-\item{filepaths}{A character string specifying the full file paths the JSON files. Default is NULL.}
-}
-\value{
-This function does not return a value. It moves corrupted JSON files to a subdirectory
-and prints a warning message if any corrupted files are found.
+\item{filepaths}{(character) Vector of file paths to specific JSON files.}
 }
 \description{
-This function scans a specified directory for JSON files, checks their validity based on the \code{status} field,
-and moves any corrupted files (with \code{status} not equal to 200) to a subdirectory named \code{corrupted_files}.
+This function removes JSON files with error status (status != 200) by either moving them to a "corrupted_files" sub-directory
+or raising an error if no JSON files are found or if the directory does not exist.
 }
 \details{
-The function first verifies the existence of the specified directory. It then searches
-for all JSON files in the directory and validates them based on their \code{status} field. JSON files
-with a \code{status} field not equal to 200 are considered corrupted and moved to a \code{corrupted_files}
-subdirectory within the specified directory.
+The function checks if either a directory containing JSON files ('dir') or direct file paths to JSON files ('filepaths') are provided. It then proceeds to load the JSON files and checks if they have an error status. Files with error status are moved to a "corrupted_files" sub-directory created in the same directory as the original file.
 }

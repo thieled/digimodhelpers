@@ -22,9 +22,3 @@ Then, it identifies the latest datetime based on end date and download date.
 Next, it parses the data from CrowdTangle or YouTube depending on the platform, and extracts required columns.
 Finally, it renames specific columns to standardize column names across platforms.
 }
-\examples{
-\dontrun{
-parsed_data <- parse_latest("/path/to/data/directory")
-}
-
-}

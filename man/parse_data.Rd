@@ -4,13 +4,15 @@
 \alias{parse_data}
 \title{Parse data from specified directory}
 \usage{
-parse_data(dir)
+parse_data(dir = NULL, filepaths = NULL)
 }
 \arguments{
-\item{dir}{A character string specifying the directory from which data needs to be parsed.}
+\item{dir}{A character string specifying the directory from which data needs to be parsed. Default is NULL.}
+
+\item{filepaths}{A character vector specifying the filepaths to be parsed. Default is NULL.}
 }
 \value{
-A data.table containing parsed data from the specified directory.
+A data.table containing parsed data from the specified directory or filepaths.
 }
 \description{
 This function parses data from the specified directory. It first checks if the directory exists. If not, it throws an error.
