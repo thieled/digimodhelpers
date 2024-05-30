@@ -560,6 +560,9 @@ map_yt_comments <- function(slices, return_results = TRUE){
   # Check each data.table in slices if it already has been called
   slices_checked <- purrr::map(.x = slices, .f = comments_call_deduplicate)
 
+  # Drop if dt has 0 rows
+  slices_checked <- purrr::discard(slices_checked, ~ nrow(.x) == 0)
+
   # Function to be mapped on each data.table in slices
   call_comments <- function(dt) {
     video_ids <- dt$item_id
