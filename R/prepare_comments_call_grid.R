@@ -147,7 +147,7 @@ slice_post_timeframes <- function(dir = NULL,
 #'
 #' @return A `data.table` with rows removed where the `item_id` is found in the filenames in the specified directory.
 #'
-#' @details The function retrieves the `save_dir` from the `dt`, uses a safe version of `parse_comment_filenames` to parse filenames in the directory, and removes rows from `dt` where the `item_id` is found in the parsed filenames.
+#' @export
 comments_call_deduplicate <- function(dt){
 
   # Retrieve save directory from dt

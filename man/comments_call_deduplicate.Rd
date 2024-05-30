@@ -15,6 +15,3 @@ A \code{data.table} with rows removed where the \code{item_id} is found in the f
 \description{
 This function checks whether items in a given data.table (\code{dt}) have already been collected by comparing \code{item_id} values with those found in comment filenames in a specified directory.
 }
-\details{
-The function retrieves the \code{save_dir} from the \code{dt}, uses a safe version of \code{parse_comment_filenames} to parse filenames in the directory, and removes rows from \code{dt} where the \code{item_id} is found in the parsed filenames.
-}
