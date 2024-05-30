@@ -551,6 +551,8 @@ call_log_yt_comments <- function(video_ids,
 #' specified `save_dir`. It then calls the `call_log_yt_comments` function for each data.table to
 #' collect comments for posts/videos that have not been collected yet.
 #'
+#' @export
+#'
 #' @seealso \code{\link{comments_call_deduplicate}}, \code{\link{call_log_yt_comments}}
 map_yt_comments <- function(slices, return_results = TRUE){
 
