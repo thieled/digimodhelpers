@@ -153,15 +153,26 @@ call_log_ct <- function(grid_df,
   #     return(NULL)
   #   }
   # )
-  #
+
+  # Clean up directory
+  directory <- grid_df$data[[1]]
+  logger::log_info(paste("Clening up directory: ", directory))
+  if(verbose) message(paste("Clening up directory: ", directory))
+
+  # Check path for invalid .jsons - and move invalid ones into subfolder
+  remove_invalid_jsons(directory)
+
+  # Remove error jsons
+  remove_error_jsons(directory)
+
+
   # Close the logging
   logger::log_info("Logging completed.")
   if(verbose) message("Logging completed.")
   logger::log_appender(NULL)
 
-  if(return_results){
-    return(results)
-  }
+  if(return_results)    return(results)
+
 }
 
 
@@ -336,6 +347,14 @@ call_log_yt <- function(grid_df,
     # Return NULL in case of error
     return(NULL)
   })
+
+  # Clean up directory
+  directory <- grid_df$data[[1]]
+  logger::log_info(paste("Clening up directory: ", directory))
+  if(verbose) message(paste("Clening up directory: ", directory))
+
+  # Check path for invalid .jsons - and move invalid ones into subfolder
+  remove_invalid_jsons(directory)
 
   # Close the logging
   logger::log_info("Logging completed.")

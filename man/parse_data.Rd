@@ -4,12 +4,14 @@
 \alias{parse_data}
 \title{Parse data from specified directory}
 \usage{
-parse_data(dir = NULL, filepaths = NULL)
+parse_data(dir = NULL, filepaths = NULL, cleanup = FALSE)
 }
 \arguments{
 \item{dir}{A character string specifying the directory from which data needs to be parsed. Default is NULL.}
 
 \item{filepaths}{A character vector specifying the filepaths to be parsed. Default is NULL.}
+
+\item{cleanup}{Logical. Should the directory \code{path} checked for corrupt jsons and error jsons before parsing? Slows up process.}
 }
 \value{
 A data.table containing parsed data from the specified directory or filepaths.

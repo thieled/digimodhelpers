@@ -189,6 +189,7 @@ parse_filename_strings <- function(filepaths){
 #' It supports parsing data from different platforms like Instagram, Facebook, and YouTube.
 #'
 #' @param path The path to the directory containing the data files.
+#' @param cleanup Logical. Should the directory `path` checked for corrupt jsons and error jsons before parsing? Slows up process.
 #' @return A data.table containing the parsed data.
 #'
 #' @details
@@ -201,24 +202,27 @@ parse_filename_strings <- function(filepaths){
 #'
 #' @export
 #'
-parse_latest <- function(path) {
+parse_latest <- function(path,
+                         cleanup = FALSE) {
 
-  # Check path for invalid .jsons - and move invalid ones into subfolder
-  remove_invalid_jsons(path)
 
-  # Call "parse filenames" function from digimodhelpers - extract info from json filenames
-  files_df <- parse_filenames(path)
+  if(cleanup){
+        # Check path for invalid .jsons - and move invalid ones into subfolder
+        remove_invalid_jsons(path)
 
-  # Remove error files from ct path
-  if(files_df[["plat"]][[1]] %in% c("ig", "fb")){
+        # Call "parse filenames" function from digimodhelpers - extract info from json filenames
+        files_df <- parse_filenames(path)
 
-    remove_error_jsons(path)
+        # Remove error files from ct path
+        if(files_df[["plat"]][[1]] %in% c("ig", "fb")){
 
-    # And call parse_filenames again
-    files_df <- parse_filenames(path)
+          remove_error_jsons(path)
 
+          # And call parse_filenames again
+          files_df <- parse_filenames(path)
+
+        }
   }
-
 
   # set datetime as datetime
   files_df[["to_datetime"]] <- lubridate::as_datetime(files_df[["to_datetime"]])
@@ -400,11 +404,12 @@ find_latest <- function(path) {
 #'
 #' @param dir A character string specifying the directory from which data needs to be parsed. Default is NULL.
 #' @param filepaths A character vector specifying the filepaths to be parsed. Default is NULL.
+#' @param cleanup Logical. Should the directory `path` checked for corrupt jsons and error jsons before parsing? Slows up process.
 #'
 #' @return A data.table containing parsed data from the specified directory or filepaths.
 #'
 #' @export
-parse_data <- function(dir = NULL, filepaths = NULL) {
+parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
 
   # Check if either dir or filepaths are provided
   if (is.null(dir) && is.null(filepaths)) {
@@ -417,7 +422,7 @@ parse_data <- function(dir = NULL, filepaths = NULL) {
   }
 
   # Check and remove invalid JSONs
-  remove_invalid_jsons(dir = dir, filepaths = filepaths)
+  if(cleanup) remove_invalid_jsons(dir = dir, filepaths = filepaths)
 
   # Call "parse filenames" function from digimodhelpers - extract info from json filenames
   if (!is.null(dir)) {

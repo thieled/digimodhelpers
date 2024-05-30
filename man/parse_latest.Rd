@@ -4,10 +4,12 @@
 \alias{parse_latest}
 \title{Parse Latest Data}
 \usage{
-parse_latest(path)
+parse_latest(path, cleanup = FALSE)
 }
 \arguments{
 \item{path}{The path to the directory containing the data files.}
+
+\item{cleanup}{Logical. Should the directory \code{path} checked for corrupt jsons and error jsons before parsing? Slows up process.}
 }
 \value{
 A data.table containing the parsed data.
