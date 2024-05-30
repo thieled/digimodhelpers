@@ -636,3 +636,89 @@ parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
 
 
 
+
+
+#' Parse Comment Filenames
+#'
+#' This function parses filenames of JSON files containing comments from various platforms.
+#' It extracts metadata such as platform identifier, download date, download time, and item ID.
+#'
+#' @param path A character string specifying the directory path where JSON files are located. Default is `NULL`.
+#' @param recursive A logical value indicating whether to search for files recursively within subdirectories. Default is `FALSE`.
+#'
+#' @return A `tibble` containing the following columns:
+#' \describe{
+#'   \item{item_id}{The extracted item ID from the filename.}
+#'   \item{plat}{The platform identifier extracted from the filename (e.g., `fb`, `ig`, `tt`, `yt`, `tg`, `bc`, `bs`).}
+#'   \item{full_filepath}{The full file path of each JSON file.}
+#'   \item{filenames}{The base filename of each JSON file.}
+#'   \item{dirname}{The name of the folder in which the JSONs are stored.}
+#' }
+#'
+#' @details The function checks if the provided directory path exists and then lists all JSON files in the directory (and subdirectories if `recursive` is `TRUE`). It extracts the platform identifier from the beginning of the filename, cleans up the filename to extract the download date and time, and constructs a download datetime. It also extracts the item ID from the cleaned filename.
+#'
+#' @export
+parse_comment_filenames <- function(path = NULL, recursive = FALSE) {
+
+  # Check if either dir or filepaths are provided
+  if (is.null(path)) {
+    stop("No 'path' provided.")
+  }
+
+  # Check if directory exists
+  if (!is.null(path) && !dir.exists(path)) {
+    stop(paste0("There is no such directory ", path))
+  }
+
+  # Get full filepath
+  if (dir.exists(path)[[1]]) {
+    full_filepath <- list.files(
+      path = path,
+      pattern = ".json$",
+      recursive = recursive,
+      full.names = TRUE,
+      ignore.case = TRUE
+    )
+  }
+
+  # Get the filename
+  filenames <- basename(full_filepath)
+
+  # Get name of folder
+  dirname <- basename(dirname(full_filepath))
+
+
+  # Platform
+  plat <- stringr::str_extract(filenames, pattern = "^(fb|ig|tt|yt|tg|bc|bs)")
+
+  # Drop the prefix
+  cleaned_filenames <- gsub(".*comm_", "", filenames, perl = TRUE)
+
+  # Download date
+  dl_date <- lubridate::as_date(stringr::str_extract(cleaned_filenames, pattern = "(?<=DL_)\\d{4}[:punct:]\\d{2}[:punct:]\\d{2}"))
+
+  # Download time
+  dl_time <- stringr::str_extract(cleaned_filenames, pattern = "(?<=DL_\\d{4}[:punct:]\\d{2}[:punct:]\\d{2}[T|[:punct:]])\\d{2}[h|[:punct:]]\\d{2}[m|[:punct:]]\\d{2}") |>
+    stringr::str_replace("[h|[:punct:]]", "\\:") |>
+    stringr::str_replace_all("[m|[:punct:]]", "\\:")
+
+  # Download datetime
+  dl_datetime <- stringr::str_c(dl_date, dl_time, sep = "T") |>
+    lubridate::as_datetime(tz = "UTC") |>
+    lubridate::format_ISO8601()
+
+  item_id <- stringr::str_extract(cleaned_filenames, pattern = ".+(?=_DL_\\d{4}.+)")
+
+  # Create data.frame
+  df <- tibble::tibble(
+    item_id,
+    plat,
+    full_filepath,
+    filenames,
+    dirname
+  )
+
+  return(df)
+}
+
+
