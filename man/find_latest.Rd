@@ -4,10 +4,12 @@
 \alias{find_latest}
 \title{Find the latest file for each account in the specified path}
 \usage{
-find_latest(path)
+find_latest(path, cleanup = FALSE)
 }
 \arguments{
 \item{path}{A character string specifying the directory path where the files are located.}
+
+\item{cleanup}{Logical. Should the directory \code{path} checked for corrupt jsons and error jsons before parsing? Slows up process.}
 }
 \value{
 A data.table with columns representing account details and the latest file information.

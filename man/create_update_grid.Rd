@@ -22,7 +22,8 @@ create_update_grid(
   parse = TRUE,
   data_path = NULL,
   count = Inf,
-  drop_existing = FALSE
+  drop_existing = FALSE,
+  cleanup = FALSE
 )
 }
 \arguments{
@@ -63,6 +64,8 @@ IMPORTANT: For Crowdtangle this is assumed to be the handle, while for all other
 \item{count}{The count for the update grid.}
 
 \item{drop_existing}{Logical indicating whether to drop existing files.}
+
+\item{cleanup}{Logical. Should the directory \code{path} checked for corrupt jsons and error jsons before parsing? Slows up process.}
 }
 \value{
 A data frame containing the generated update grid.

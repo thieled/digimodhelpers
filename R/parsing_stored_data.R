@@ -365,15 +365,17 @@ parse_latest <- function(path,
 #' It returns a data.table containing the latest file for each unique account.
 #'
 #' @param path A character string specifying the directory path where the files are located.
+#' @param cleanup Logical. Should the directory `path` checked for corrupt jsons and error jsons before parsing? Slows up process.
 #' @return A data.table with columns representing account details and the latest file information.
 #' @export
-find_latest <- function(path) {
+find_latest <- function(path,
+                        cleanup = FALSE) {
   if (!dir.exists(path)) {
     stop("Path does not exist. Please provide a valid path.")
   }
 
   # Parse the latest files for each account
-  dt <- parse_latest(path)
+  dt <- parse_latest(path, cleanup = cleanup)
 
   # Convert "date" to POSIXct if it's not already
   if (!inherits(dt$published_time, "POSIXct")) {

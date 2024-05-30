@@ -463,6 +463,7 @@ drop_existing <- function(path,
 #' @param data_path The path to the data.
 #' @param count The count for the update grid.
 #' @param drop_existing Logical indicating whether to drop existing files.
+#' @param cleanup Logical. Should the directory `path` checked for corrupt jsons and error jsons before parsing? Slows up process.
 #'
 #' @return A data frame containing the generated update grid.
 #'
@@ -488,9 +489,10 @@ create_update_grid <- function(df = df,
                                parse = TRUE,
                                data_path = NULL,
                                count = Inf,
-                               drop_existing = FALSE) {
+                               drop_existing = FALSE,
+                               cleanup = FALSE) {
   # Find latest stored files
-  latest_dt <- find_latest(data_path)
+  latest_dt <- find_latest(data_path, cleanup = cleanup)
 
   # Rename variables
 
