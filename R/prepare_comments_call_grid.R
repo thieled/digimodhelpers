@@ -133,3 +133,35 @@ slice_post_timeframes <- function(dir = NULL,
 
   return(split_dt)
 }
+
+
+
+
+
+
+
+
+#' Check If Comments Were Already Collected
+#'
+#' This function checks whether items in a given data.table (`dt`) have already been collected by comparing `item_id` values with those found in comment filenames in a specified directory.
+#'
+#' @param dt A `data.table` containing an `item_id` column and a `save_dir` column. The first element of the `save_dir` column is used to determine the directory to check for collected items.
+#'
+#' @return A `data.table` with rows removed where the `item_id` is found in the filenames in the specified directory.
+#'
+#' @details The function retrieves the `save_dir` from the `dt`, uses a safe version of `parse_comment_filenames` to parse filenames in the directory, and removes rows from `dt` where the `item_id` is found in the parsed filenames.
+comments_call_deduplicate <- function(dt){
+
+  # Retrieve save directory from dt
+  dir = dt[["save_dir"]][1]
+
+  # Parse
+  safely_parse_comment_fn <- purrr::safely(parse_comment_filenames, otherwise = NULL)
+  comm_file_df <- safely_parse_comment_fn(dir)$result
+
+  if(!is.null(comm_file_df)){
+    dt <- dt[!item_id %in% comm_file_df[["item_id"]]]
+  }
+
+  return(dt)
+}
