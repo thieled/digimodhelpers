@@ -206,21 +206,18 @@ parse_latest <- function(path,
                          cleanup = FALSE) {
 
 
-  if(cleanup){
-        # Check path for invalid .jsons - and move invalid ones into subfolder
-        remove_invalid_jsons(path)
+  # Check path for invalid .jsons - and move invalid ones into subfolder
+  if(cleanup) remove_invalid_jsons(path)
 
-        # Call "parse filenames" function from digimodhelpers - extract info from json filenames
-        files_df <- parse_filenames(path)
+  # Call "parse filenames" function from digimodhelpers - extract info from json filenames
+  files_df <- parse_filenames(path)
 
+  if(cleanup) {
         # Remove error files from ct path
         if(files_df[["plat"]][[1]] %in% c("ig", "fb")){
-
           remove_error_jsons(path)
-
           # And call parse_filenames again
           files_df <- parse_filenames(path)
-
         }
   }
 
