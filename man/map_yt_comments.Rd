@@ -28,6 +28,3 @@ posts/videos have already been collected by looking for existing JSON files in t
 specified \code{save_dir}. It then calls the \code{call_log_yt_comments} function for each data.table to
 collect comments for posts/videos that have not been collected yet.
 }
-\seealso{
-\code{\link{comments_call_deduplicate}}, \code{\link{call_log_yt_comments}}
-}

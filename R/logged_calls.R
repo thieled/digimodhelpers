@@ -553,7 +553,6 @@ call_log_yt_comments <- function(video_ids,
 #'
 #' @export
 #'
-#' @seealso \code{\link{comments_call_deduplicate}}, \code{\link{call_log_yt_comments}}
 map_yt_comments <- function(slices, return_results = TRUE){
 
   ## TO DO: pass on arguments properly
