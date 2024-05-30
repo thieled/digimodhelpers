@@ -139,8 +139,6 @@ slice_post_timeframes <- function(dir = NULL,
 
 
 
-
-
 #' Check If Comments Were Already Collected
 #'
 #' This function checks whether items in a given data.table (`dt`) have already been collected by comparing `item_id` values with those found in comment filenames in a specified directory.

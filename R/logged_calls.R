@@ -528,3 +528,51 @@ call_log_yt_comments <- function(video_ids,
 
 }
 
+
+
+
+
+#' Map YouTube Comments Collection
+#'
+#' This function processes a list of data.tables, each containing information about social media posts
+#'  or videos posted within different timeframes. It checks if the `save_dir` specified in those
+#'  data.tables already contains a JSON file for each post (by `item_id`). If not, it collects all
+#'  comments for that video or post.
+#'
+#' @param slices A list of data.tables. Each data.table should contain columns `item_id` and `save_dir`. `item_id` represents the identifier for the post or video, and `save_dir` represents the directory where the comments JSON file should be saved.
+#' @param return_results A logical value indicating whether to return the results of the comments
+#' collection. Default is `TRUE`.
+#'
+#' @return If `return_results` is `TRUE`, a list of results from the comments collection is returned.
+#' If `return_results` is `FALSE`, the function does not return any value.
+#'
+#' @details The function first checks each data.table in `slices` to determine if comments for the
+#' posts/videos have already been collected by looking for existing JSON files in the
+#' specified `save_dir`. It then calls the `call_log_yt_comments` function for each data.table to
+#' collect comments for posts/videos that have not been collected yet.
+#'
+#' @seealso \code{\link{comments_call_deduplicate}}, \code{\link{call_log_yt_comments}}
+map_yt_comments <- function(slices, return_results = TRUE){
+
+  ## TO DO: pass on arguments properly
+
+  # Check each data.table in slices if it already has been called
+  slices_checked <- purrr::map(.x = slices, .f = comments_call_deduplicate)
+
+  # Function to be mapped on each data.table in slices
+  call_comments <- function(dt) {
+    video_ids <- dt$item_id
+    data_dir <- dt$save_dir[[1]]
+    call_log_yt_comments(video_ids = video_ids, data_dir = data_dir)
+  }
+
+  # Apply the function to each element of slices_checked using purrr::map
+  comments_results <- purrr::map(.x = slices_checked, .f = call_comments)
+
+  if(return_results) return(comments_results)
+}
+
+
+
+
+
