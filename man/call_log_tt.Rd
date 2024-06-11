@@ -18,7 +18,7 @@ call_log_tt(
 \arguments{
 \item{grid_df}{The grid dataframe containing information about the API calls to be made.}
 
-\item{work_dir}{Sets a working dictionary (MM pls check)}
+\item{work_dir}{Sets a working dictionary.}
 
 \item{traceback}{Logical; indicates whether to show traceback in case of an error. Default is FALSE.}
 

@@ -2,18 +2,27 @@
 % Please edit documentation in R/tiktok_helpers.R
 \name{get_comments_tt}
 \alias{get_comments_tt}
-\title{Call TikTok API to get comment metadata of the collected videos and Log Results}
+\title{Call TikTok API to get comment metadata of the collected videos and log results}
 \usage{
-get_comments_tt(recent_videos, work_dir)
+get_comments_tt(dir = NULL, split_df = NULL)
 }
 \arguments{
-\item{recent_videos}{MM pls add doc.}
+\item{dir}{The directory where the log files and JSON results will be saved.}
 
-\item{work_dir}{Sets a working directory - MM plz check.}
+\item{split_df}{A list of data.frames containing video information.}
 }
 \value{
-If return_results is TRUE, a list containing the results of the API calls.
+A list of data.frames with comments added.
 }
 \description{
-This function calls the TikTok API for each row in the provided grid dataframe, logs the results, and optionally returns the results.
+This function calls the TikTok API for each row in the provided list of data.frames containing video information,
+collects the comments, logs the results, and saves the updated data.frames with comments as a JSON file.
+}
+\examples{
+\dontrun{
+# Example usage:
+dir <- "path/to/your/directory"
+split_df <- list(df1, df2, df3)  # List of data.frames
+result <- get_comments_tt(dir = dir, split_df = split_df)
+}
 }
