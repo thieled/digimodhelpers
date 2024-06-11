@@ -34,8 +34,7 @@
 #' @return A data frame containing a grid of account ids or handles and time frames for data collection.
 #'
 #' @export
-
-
+#'
 create_call_grid_tt <- function(df = df,
                                 platform = c("fb", "ig", "tt", "yt", "tg", "bc", "bs"),
                                 country_var = NULL,
@@ -142,7 +141,7 @@ create_call_grid_tt <- function(df = df,
 #' This function calls the TikTok API for each row in the provided grid dataframe, logs the results, and optionally returns the results.
 #'
 #' @param grid_df The grid dataframe containing information about the API calls to be made.
-#' @param work_dir Sets a working dictionary (MM pls check)
+#' @param work_dir Sets a working dictionary.
 #' @param traceback Logical; indicates whether to show traceback in case of an error. Default is FALSE.
 #' @param autolog Logical; indicates whether to start logging. Default is TRUE.
 #' @param show_notes Logical; indicates whether to show informational notes during logging. Default is TRUE.
@@ -154,7 +153,6 @@ create_call_grid_tt <- function(df = df,
 #'
 #' @export
 #'
-
 call_log_tt <- function(grid_df,
                         work_dir,  # Neuer Parameter für das Arbeitsverzeichnis
                         traceback = FALSE,
@@ -250,70 +248,190 @@ call_log_tt <- function(grid_df,
 }
 
 
-#' Call TikTok API to get comment metadata of the collected videos and Log Results
+#' Read TikTok JSON post files and split data into timeframes
 #'
-#' This function calls the TikTok API for each row in the provided grid dataframe, logs the results, and optionally returns the results.
+#' Prepares the TikTok data to be passed on to the comments-collector functions.
+#' This function processes JSON files from a specified directory or file paths. It validates the JSON files,
+#' parses the filenames to extract information, filters files based on a specified timeframe, and splits the
+#' data into multiple data.tables based on timeframe categories.
 #'
-#' @param work_dir Sets a working directory - MM plz check.
-#' @param recent_videos MM pls add doc.
-#' @return If return_results is TRUE, a list containing the results of the API calls.
+#' @param dir A character string specifying the directory from which data needs to be parsed.
+#' @param cutoff A numeric vector of cutoff times in hours for categorizing the time difference to now.
+#' @param recursive A logical value indicating whether to search the directory recursively. Default is \code{FALSE}.
+#' @param verbose A logical value indicating whether to print messages during processing. Default is \code{TRUE}.
+#' @param include_latest A logical value indicating whether to include the latest time cutoff. Default is \code{TRUE}.
+#' @param include_oldest A logical value indicating whether to include the oldest time cutoff. Default is \code{FALSE}.
+#' @param input_tz A character value passed to \code{lubridate::as_datetime} indicating the input timezone. Default is \code{"CEST"}.
+#'
+#' @return A named list of data.tables split by timeframe categories.
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' dir <- "path/to/your/directory"
+#' cutoff <- c(1, 24, 72, 240)
+#' result <- slice_post_timeframes_tt(dir = dir, cutoff = cutoff, recursive = TRUE)
+#' }
+slice_post_timeframes_tt <- function(dir = NULL,
+                                     cutoff = NULL,
+                                     recursive = FALSE,
+                                     verbose = TRUE,
+                                     include_latest = TRUE,
+                                     include_oldest = FALSE,
+                                     input_tz = "CEST") {
+
+  # Set Time
+  now <- lubridate::as_datetime(lubridate::now(), tz = "UTC")
+  formatted_now <- format(now, "%Y-%m-%dT%Hh%Mm%S")
+
+  # Set Cutoffs
+  cutoffs <- digimodhelpers::create_cutoffs(cutoff)
+  if (!is.null(cutoff)) {
+    # Set end
+    end <- if (include_oldest) max(cutoffs$cutoff) else cutoffs$cutoff[which.max(cutoffs$cutoff) - 1]
+
+    # Set start
+    start <- if (include_latest) min(cutoffs$cutoff) else cutoffs$cutoff[which.min(cutoffs$cutoff) + 1]
+  } else {
+    start <- min(cutoffs$cutoff)
+    end <- max(cutoffs$cutoff)
+  }
+
+  # Find JSON files
+  if (verbose) message("Finding JSON files...")
+  file_names <- list.files(dir, full.names = TRUE, recursive = recursive)
+  json_files <- file_names[grep("\\.json$", file_names)]
+  json_files <- json_files[file.info(json_files)$isdir == FALSE]
+
+  if (length(json_files) == 0) {
+    stop("No JSON files found in the specified directory.")
+  }
+
+  # Read JSON data and extract columns
+  if (verbose) message("Reading JSON data and extracting columns...")
+  json_data <- lapply(json_files, function(file) {
+    data <- jsonlite::fromJSON(file)
+    if (length(data) > 0) {
+      data <- data[, c("author_name", "video_id", "create_time")]
+      return(data)
+    }
+  })
+  json_data <- json_data[!sapply(json_data, is.null)]
+
+  if (length(json_data) == 0) {
+    stop("No valid JSON data found in the specified files.")
+  }
+
+  # Combine data
+  combined_df <- do.call(rbind, json_data)
+  unique_combined_df <- combined_df %>% distinct(video_id, .keep_all = TRUE)
+
+  # Compute time difference to now
+  if (verbose) message("Computing time differences...")
+  filtered_df <- unique_combined_df %>%
+    mutate(diff_time_h = as.numeric(difftime(now,
+                                             lubridate::as_datetime(create_time, tz = input_tz),
+                                             units = "hours")))
+
+  # Filter observations exceeding the timeframe
+  filtered_df <- filtered_df %>%
+    filter(diff_time_h <= end, diff_time_h >= start)
+
+  if (nrow(filtered_df) == 0) {
+    stop("No data found within the specified timeframes.")
+  }
+
+  # Assign time-frame categories and create sub-directory 'comments' variable
+  filtered_df <- filtered_df %>%
+    mutate(difftime_category = cut(diff_time_h,
+                                   breaks = cutoffs$cutoff,
+                                   labels = cutoffs$labels,
+                                   right = TRUE,
+                                   include.lowest = TRUE)) %>%
+    mutate(save_dir = file.path(dirname(dir), "comments", difftime_category))
+
+  # Split the data.table by 'difftime_category'
+  if (verbose) message("Splitting data by timeframe categories...")
+  split_df <- split(filtered_df, filtered_df$difftime_category)
+
+  return(split_df)
+}
+
+
+#' Call TikTok API to get comment metadata of the collected videos and log results
+#'
+#' This function calls the TikTok API for each row in the provided list of data.frames containing video information,
+#' collects the comments, logs the results, and saves the updated data.frames with comments as a JSON file.
+#'
+#' @param dir The directory where the log files and JSON results will be saved.
+#' @param split_df A list of data.frames containing video information.
+#'
+#' @return A list of data.frames with comments added.
 #'
 #' @export
 #'
-
-get_comments_tt <- function(recent_videos, work_dir) {
+#' @examples
+#' \dontrun{
+#' # Example usage:
+#' dir <- "path/to/your/directory"
+#' split_df <- list(df1, df2, df3)  # List of data.frames
+#' result <- get_comments_tt(dir = dir, split_df = split_df)
+#' }
+get_comments_tt <- function(dir = NULL,
+                            split_df = NULL){
 
   # Define log file
   now <- format(Sys.time(), "%Y-%m-%dT%Hh%Mm%S")
-  dir.create(file.path(paste0(work_dir, "log"), showWarnings = FALSE))
-  log_file <- paste0(work_dir, "/log", "/call_log_tt_comments_", now, ".log")
+  dir.create(file.path(paste0(dir, "log"), showWarnings = FALSE))
+  log_file <- paste0(dir, "/log", "/call_log_tt_comments_", now, ".log")
 
   # Set up logging
-  logger::log_appender(logger::appender_file(paste0(work_dir, "/log/", "call_log_tt_comments_", now, ".log")))
+  logger::log_appender(logger::appender_file(paste0(dir, "/log/", "call_log_tt_comments_", now, ".log")))
   logger::log_info("Logging started.")
 
-  # Initialize a list to store results for each row
-  results_list <- vector("list", nrow(recent_videos))
+  for (i in seq_along(split_df)) {
 
-  # Loop over each row of the recent_videos dataframe
-  for (i in 1:nrow(recent_videos)) {
-    video_id <- recent_videos$video_id[i]
+    df <- split_df[[i]]
 
-    # Log information about the current video being processed
-    logger::log_info(paste0("Processing video ID: ", video_id))
+    # Initialize a list to store comments for the current dataframe
+    comments_list <- vector("list", nrow(df))
 
-    tryCatch({
-      # Call tt_comments_api function
-      result <- traktok::tt_comments_api(video_id, fields = "all", max_pages = 10)
+    for (j in 1:nrow(df)) {
+      video_id <- df$video_id[j]
+      # Log information about the current video being processed
+      logger::log_info(paste0("Processing video ID: ", video_id))
 
-      # Add the result to the results list
-      results_list[[i]] <- result
+      # Collect comments for the current video_id
+      tryCatch({
+        result <- traktok::tt_comments_api(video_id, fields = "all", max_pages = 100)
+        comments_list[[j]] <- result
+        # Log success
+        logger::log_info(paste("Comments fetched for video ID:", video_id))
 
-      # Log success
-      logger::log_info(paste("Comments fetched for video ID:", video_id))
+      }, error = function(e) {
+        # Log errors
+        logger::log_error(paste("Error processing video ID:", video_id, "Message:", e$message))
+      }, warning = function(w) {
+        logger::log_warn(paste("Warning processing video ID:", video_id, "Message:", w$message))
+      })
+    }
 
-    }, error = function(e) {
-      # Log errors
-      logger::log_error(paste("Error processing video ID:", video_id, "Message:", e$message))
-    }, warning = function(w) {
-      logger::log_warn(paste("Warning processing video ID:", video_id, "Message:", w$message))
-    })
+    # Add the comments list as a new column to the dataframe
+    df$comments <- comments_list
+
+    # Update the dataframe in split_df
+    split_df[[i]] <- df
   }
 
-  # Add the results list as a new column to the dataframe
-  recent_videos$comments <- results_list
-
-  # Get one week ago  -- MM: pls change format if you need that in specific format
-  one_week_ago <- format(now - as.difftime(7, units = "days"), "%Y-%m-%dT%Hh%Mm%S")
-
   # Save the entire dataframe as a JSON file
-  json_file <- paste0(work_dir, "/tt_comments_of_all_videos_", "FR_", one_week_ago, "_TO_", now, ".json")
-  jsonlite::write_json(recent_videos, json_file)
+  json_file <- paste0(dir, "/tt_comments_collected_at_", now, ".json")
+  jsonlite::write_json(split_df, json_file)
   logger::log_info(paste("Results saved as JSON:", json_file))
 
   # Close the logging
   logger::log_info("Logging completed.")
   logger::log_appender(NULL)
 
-  return(recent_videos)
+  return(split_df)
 }
+
