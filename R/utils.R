@@ -31,7 +31,15 @@ utils::globalVariables(c(
   "item_id",
   "distinct",
   "video_id",
-  "create_time"
+  "create_time",
+  "file_id",
+  "etag",
+  "filename",
+  "time_window",
+  ".",
+  "download_software",
+  "replies",
+  "..keep_cols"
 ))
 
 
