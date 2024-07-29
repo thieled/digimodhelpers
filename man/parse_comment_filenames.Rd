@@ -16,6 +16,7 @@ A \code{tibble} containing the following columns:
 \describe{
 \item{item_id}{The extracted item ID from the filename.}
 \item{plat}{The platform identifier extracted from the filename (e.g., \code{fb}, \code{ig}, \code{tt}, \code{yt}, \code{tg}, \code{bc}, \code{bs}).}
+\item{is_comment}{Logical. Indicating that file contains comments.}
 \item{full_filepath}{The full file path of each JSON file.}
 \item{filenames}{The base filename of each JSON file.}
 \item{dirname}{The name of the folder in which the JSONs are stored.}

@@ -6,6 +6,8 @@
 #' @param start_date Optional. The start date to filter videos by their published date. Defaults to NULL.
 #' @param end_date Optional. The end date to filter videos by their published date. Defaults to NULL.
 #' @param max_results Optional. Maximum number of video details to retrieve. Defaults to Inf.
+#' @param progress_bar Optional. Print a progress bar. Default is false.
+#' @param verbose Logical. Default is false.
 #' @param part Optional. A character vector specifying the parts that the API response will include. Possible values are: "contentDetails", "id", "liveStreamingDetails", "localizations", "player", "recordingDetails", "snippet", "statistics", "status", "topicDetails". Defaults to include all parts.
 #' @param auth Optional. The authentication method to be used. Defaults to "key".
 #' @param ... Additional arguments passed to tuber_GET.
@@ -25,6 +27,8 @@ get_channel_vids <- function(channel_id = channel_id,
                              start_date = NULL,
                              end_date = NULL,
                              max_results = Inf,
+                             progress_bar = FALSE,
+                             verbose = FALSE,
                              part = c("contentDetails", "id", "liveStreamingDetails", "localizations", "player", "recordingDetails", "snippet", "statistics", "status", "topicDetails"),
                              auth = "key",
                              ...){
@@ -113,13 +117,17 @@ get_channel_vids <- function(channel_id = channel_id,
     }
 
     # Get video details
-    message(paste0("Fetching details from n = ", n, " videos on channel_id: ", channel_id, " ..."))
-    details <- pbapply::pblapply(vid_ids, trycatch_get_video_details, part = part, auth = auth)
+    if(verbose) message(paste0("Fetching details from n = ", n, " videos on channel_id: ", channel_id, " ..."))
+    if(progress_bar) {
+      details <- pbapply::pblapply(vid_ids, trycatch_get_video_details, part = part, auth = auth)
+    }else{
+      details <- lapply(vid_ids, trycatch_get_video_details, part = part, auth = auth)
+    }
 
     return(details)
 
   } else {
-    message("No playlist items found.")
+    if(verbose) message("No playlist items found.")
     return(NULL)
   }
 

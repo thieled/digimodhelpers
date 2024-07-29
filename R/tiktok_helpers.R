@@ -329,13 +329,13 @@ slice_post_timeframes_tt <- function(dir = NULL,
   # Compute time difference to now
   if (verbose) message("Computing time differences...")
   filtered_df <- unique_combined_df %>%
-    mutate(diff_time_h = as.numeric(difftime(now,
+    dplyr::mutate(diff_time_h = as.numeric(difftime(now,
                                              lubridate::as_datetime(create_time, tz = input_tz),
                                              units = "hours")))
 
   # Filter observations exceeding the timeframe
   filtered_df <- filtered_df %>%
-    filter(diff_time_h <= end, diff_time_h >= start)
+    dplyr::filter(diff_time_h <= end, diff_time_h >= start)
 
   if (nrow(filtered_df) == 0) {
     stop("No data found within the specified timeframes.")
@@ -343,12 +343,12 @@ slice_post_timeframes_tt <- function(dir = NULL,
 
   # Assign time-frame categories and create sub-directory 'comments' variable
   filtered_df <- filtered_df %>%
-    mutate(difftime_category = cut(diff_time_h,
+    dplyr::mutate(difftime_category = cut(diff_time_h,
                                    breaks = cutoffs$cutoff,
                                    labels = cutoffs$labels,
                                    right = TRUE,
                                    include.lowest = TRUE)) %>%
-    mutate(save_dir = file.path(dirname(dir), "comments", difftime_category))
+    dplyr::mutate(save_dir = file.path(dirname(dir), "comments", difftime_category))
 
   # Split the data.table by 'difftime_category'
   if (verbose) message("Splitting data by timeframe categories...")

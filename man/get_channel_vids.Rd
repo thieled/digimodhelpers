@@ -9,6 +9,8 @@ get_channel_vids(
   start_date = NULL,
   end_date = NULL,
   max_results = Inf,
+  progress_bar = FALSE,
+  verbose = FALSE,
   part = c("contentDetails", "id", "liveStreamingDetails", "localizations", "player",
     "recordingDetails", "snippet", "statistics", "status", "topicDetails"),
   auth = "key",
@@ -23,6 +25,10 @@ get_channel_vids(
 \item{end_date}{Optional. The end date to filter videos by their published date. Defaults to NULL.}
 
 \item{max_results}{Optional. Maximum number of video details to retrieve. Defaults to Inf.}
+
+\item{progress_bar}{Optional. Print a progress bar. Default is false.}
+
+\item{verbose}{Logical. Default is false.}
 
 \item{part}{Optional. A character vector specifying the parts that the API response will include. Possible values are: "contentDetails", "id", "liveStreamingDetails", "localizations", "player", "recordingDetails", "snippet", "statistics", "status", "topicDetails". Defaults to include all parts.}
 

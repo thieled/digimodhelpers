@@ -650,6 +650,7 @@ parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
 #' \describe{
 #'   \item{item_id}{The extracted item ID from the filename.}
 #'   \item{plat}{The platform identifier extracted from the filename (e.g., `fb`, `ig`, `tt`, `yt`, `tg`, `bc`, `bs`).}
+#'   \item{is_comment}{Logical. Indicating that file contains comments.}
 #'   \item{full_filepath}{The full file path of each JSON file.}
 #'   \item{filenames}{The base filename of each JSON file.}
 #'   \item{dirname}{The name of the folder in which the JSONs are stored.}
@@ -691,6 +692,9 @@ parse_comment_filenames <- function(path = NULL, recursive = FALSE) {
   # Platform
   plat <- stringr::str_extract(filenames, pattern = "^(fb|ig|tt|yt|tg|bc|bs)")
 
+  # Comment y/n
+  is_comment <- stringr::str_detect(filenames, ".*comm_")
+
   # Drop the prefix
   cleaned_filenames <- gsub(".*comm_", "", filenames, perl = TRUE)
 
@@ -713,6 +717,7 @@ parse_comment_filenames <- function(path = NULL, recursive = FALSE) {
   df <- tibble::tibble(
     item_id,
     plat,
+    is_comment,
     full_filepath,
     filenames,
     dirname
