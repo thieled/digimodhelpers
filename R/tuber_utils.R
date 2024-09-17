@@ -587,8 +587,8 @@ yt_search_FIX <- function(
                     relevanceLanguage = relevance_language,
                     pageToken = page_token)
 
-  # Sending NULLs to Google seems to short its wiring
-  querylist <- querylist[names(querylist)[sapply(querylist, function(x) !is.null(x))]]
+  # Remove NULLs from the query list
+  querylist <- querylist[!sapply(querylist, is.null)]
 
   all_results <- list()
 
@@ -612,12 +612,11 @@ yt_search_FIX <- function(
     querylist$pageToken <- page_token
   }
 
-  fin_res <- plyr::ldply(all_results, rbind)
-
-  if (identical(simplify, TRUE)) {
+  if (simplify) {
+    fin_res <- plyr::ldply(all_results, rbind)
     return(fin_res)
   }
 
-  return(res)
+  return(all_results)
 }
 

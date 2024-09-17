@@ -463,25 +463,35 @@ parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
                                        names_sep = "_",
                                        names_repair = "minimal")
 
+
+    # Unlist 'media' column
+    file_dt[, statistics := purrr::map(file_dt[, statistics], ~ unlist(.x))]
+
+    # Unnest 'account' column
+    file_dt <- tidytable::unnest_wider(file_dt,
+                                       statistics,
+                                       names_sep = "_",
+                                       names_repair = "minimal")
+
+
     # Extract FB account ID from account_url;
     # NOTE: the original 'account_id' variable seems to be specific to CT
     file_dt[, account_id := gsub(".*\\/(\\d+)$", "\\1", account_url)]
 
 
-    # Define columns to keep
-    keep_cols <- colnames(file_dt)[colnames(file_dt) %in% c(
-      "file",
-      "filepath",
-      "date",
-      "account_id",
-      "account_handle",
-      "platformId"
-    )]
+    # # Define columns to keep
+    # keep_cols <- colnames(file_dt)[colnames(file_dt) %in% c(
+    #   "file",
+    #   "filepath",
+    #   "date",
+    #   "account_id",
+    #   "account_handle",
+    #   "platformId"
+    # )]
 
     # Drop unneccessary columns
-    file_dt <- file_dt[, keep_cols, with = FALSE]
+    #  file_dt <- file_dt[, keep_cols, with = FALSE]
 
-    names(file_dt)
 
     # Columns to rename
     old_names <- c(
@@ -631,6 +641,8 @@ parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
 
   return(file_dt)
 }
+
+
 
 
 
