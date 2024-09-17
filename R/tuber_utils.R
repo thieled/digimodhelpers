@@ -397,3 +397,227 @@ get_comments_yt <- function(video_id = NULL,
   return(all_res)
 
 }
+
+
+
+
+
+
+
+
+#' Search YouTube
+#'
+#' Search for videos, channels and playlists. (By default, the function
+#' searches for videos.)
+#' NOTE: The fix ensures that additional arguments are correctly passed on to tuber_GET.
+#'
+#' @param term Character. Search term; required; no default
+#' For using Boolean operators, see the API documentation.
+#' Here's some of the relevant information:
+#' "Your request can also use the Boolean NOT (-) and OR (|) operators to
+#' exclude videos or to
+#' find videos that are associated with one of several search terms. For
+#' example, to search
+#' for videos matching either "boating" or "sailing", set the q parameter
+#' value to boating|sailing.
+#' Similarly, to search for videos matching either "boating" or "sailing"
+#' but not "fishing",
+#' set the q parameter value to boating|sailing -fishing"
+#' @param max_results Maximum number of items that should be returned.
+#' Integer. Optional. Can be between 0 and 50. Default is 50.
+#' Search results are constrained to a maximum of 500 videos if type is
+#' video and we have a value of \code{channel_id}.
+#' @param channel_id Character. Only return search results from this
+#' channel; Optional.
+#' @param channel_type Character. Optional. Takes one of two values:
+#' \code{'any', 'show'}. Default is \code{'any'}
+#' @param event_type Character. Optional. Takes one of three values:
+#' \code{'completed', 'live', 'upcoming'}
+#' @param location  Character.  Optional. Latitude and Longitude within
+#' parentheses, e.g. "(37.42307,-122.08427)"
+#' @param location_radius Character.  Optional. e.g. "1500m", "5km",
+#' "10000ft", "0.75mi"
+#' @param published_after Character. Optional. RFC 339 Format.
+#' For instance, "1970-01-01T00:00:00Z"
+#' @param published_before Character. Optional. RFC 339 Format.
+#' For instance, "1970-01-01T00:00:00Z"
+#' @param relevance_language Character. Optional. The relevance_language
+#' argument instructs the API to return search results that are most relevant to
+#' the specified language. The parameter value is typically an ISO 639-1
+#' two-letter language code. However, you should use the values zh-Hans for
+#' simplified Chinese and zh-Hant for traditional Chinese. Please note that
+#' results in other languages will still be returned if they are highly relevant
+#' to the search query term.
+#' @param type Character. Optional. Takes one of three values:
+#' \code{'video', 'channel', 'playlist'}. Default is \code{'video'}.
+#' @param video_caption Character. Optional. Takes one of three values:
+#' \code{'any'} (return all videos; Default), \code{'closedCaption', 'none'}.
+#' Type must be set to video.
+#' @param video_type Character. Optional. Takes one of three values:
+#' \code{'any'} (return all videos; Default), \code{'episode'}
+#' (return episode of shows), 'movie' (return movies)
+#' @param video_syndicated Character. Optional. Takes one of two values:
+#' \code{'any'} (return all videos; Default), \code{'true'}
+#' (return only syndicated videos)
+#' @param region_code Character. Required. Has to be a ISO 3166-1 alpha-2 code
+#'  (see \url{https://www.iso.org/obp/ui/#search}).
+#' @param video_definition Character. Optional.
+#' Takes one of three values: \code{'any'} (return all videos; Default),
+#' \code{'high', 'standard'}
+#' @param video_license Character. Optional.
+#' Takes one of three values: \code{'any'} (return all videos; Default),
+#' \code{'creativeCommon'} (return videos with Creative Commons
+#' license), \code{'youtube'} (return videos with standard YouTube license).
+#' @param relevance_language Character. Default is "en".
+#' @param simplify Boolean. Return a data.frame if \code{TRUE}.
+#' Default is \code{TRUE}.
+#' If \code{TRUE}, it returns a list that carries additional information.
+#' @param page_token specific page in the result set that should be
+#' returned, optional
+#' @param get_all get all results, iterating through all the results
+#' pages. Default is \code{TRUE}.
+#' Result is a \code{data.frame}. Optional.
+#' @param \dots Additional arguments passed to \code{\link{tuber_GET}}.
+#'
+#' @return data.frame with 16 elements: \code{video_id, publishedAt,
+#' channelId, title, description,
+#' thumbnails.default.url, thumbnails.default.width, thumbnails.default.height,
+#' thumbnails.medium.url,
+#' thumbnails.medium.width, thumbnails.medium.height, thumbnails.high.url,
+#' thumbnails.high.width,
+#' thumbnails.high.height, channelTitle, liveBroadcastContent}
+#'
+#' @export
+#'
+#' @references \url{https://developers.google.com/youtube/v3/docs/search/list}
+#'
+#' @examples
+#'
+#' \dontrun{
+#'
+#' # Set API token via yt_oauth() first
+#'
+#' yt_search(term = "Barack Obama")
+#' yt_search(term = "Barack Obama", published_after = "2016-10-01T00:00:00Z")
+#' yt_search(term = "Barack Obama", published_before = "2016-09-01T00:00:00Z")
+#' yt_search(term = "Barack Obama", published_before = "2016-03-01T00:00:00Z",
+#'                                published_after = "2016-02-01T00:00:00Z")
+#' yt_search(term = "Barack Obama", published_before = "2016-02-10T00:00:00Z",
+#'                                published_after = "2016-01-01T00:00:00Z")
+#' }
+yt_search_FIX <- function(
+    term = NULL,
+    max_results = 50,
+    channel_id = NULL,
+    channel_type = NULL,
+    type = "video",
+    event_type = NULL,
+    location = NULL,
+    location_radius = NULL,
+    published_after = NULL,
+    published_before = NULL,
+    video_definition = "any",
+    video_caption = "any",
+    video_license = "any",
+    video_syndicated = "any",
+    region_code = NULL,
+    relevance_language = "en",
+    video_type = "any",
+    simplify = TRUE,
+    get_all = TRUE,
+    page_token = NULL,
+    ...
+) {
+
+  if (!is.character(term)) stop("Must specify a search term.\n")
+
+  if (max_results < 0 | max_results > 50) {
+    stop("max_results only takes a value between 0 and 50.")
+  }
+
+  if (type == "video" && !(video_license %in% c("any", "creativeCommon", "youtube"))) {
+    stop("video_license can only take values: any, creativeCommon, or youtube.")
+  }
+
+  if (type == "video" && !(video_syndicated %in% c("any", "true"))) {
+    stop("video_syndicated can only take values: any or true.")
+  }
+
+  if (type == "video" && !(video_type %in% c("any", "episode", "movie"))) {
+    stop("video_type can only take values: any, episode, or movie.")
+  }
+
+  if (is.character(published_after)) {
+    if (is.na(as.POSIXct(published_after,  format = "%Y-%m-%dT%H:%M:%SZ"))) {
+      stop("The date is not properly formatted in RFC 339 Format.")
+    }
+  }
+
+  if (is.character(published_before)) {
+    if (is.na(as.POSIXct(published_before, format = "%Y-%m-%dT%H:%M:%SZ"))) {
+      stop("The date is not properly formatted in RFC 339 Format.")
+    }
+  }
+
+  if (type != "video") {
+    video_caption <- video_license <- video_definition <-
+      video_type <- video_syndicated <- NULL
+  }
+  if (!is.null(location) && is.null(location_radius)) {
+    stop("Location radius must be specified with location")
+  }
+
+  querylist <- list(part = "snippet",
+                    q = term,
+                    maxResults = max_results,
+                    channelId = channel_id,
+                    type = type,
+                    channelType = channel_type,
+                    eventType = event_type,
+                    location = location,
+                    locationRadius = location_radius,
+                    publishedAfter = published_after,
+                    publishedBefore = published_before,
+                    videoDefinition = video_definition,
+                    videoCaption = video_caption,
+                    videoType = video_type,
+                    videoSyndicated = video_syndicated,
+                    videoLicense = video_license,
+                    regionCode = region_code,
+                    relevanceLanguage = relevance_language,
+                    pageToken = page_token)
+
+  # Sending NULLs to Google seems to short its wiring
+  querylist <- querylist[names(querylist)[sapply(querylist, function(x) !is.null(x))]]
+
+  all_results <- list()
+
+  repeat {
+    res <- tuber:::tuber_GET("search", querylist, ...)
+
+    if (type == "video") {
+      simple_res <- lapply(res$items, function(x) {
+        c(video_id = x$id$videoId, unlist(x$snippet))
+      })
+    } else {
+      simple_res <- lapply(res$items, function(x) unlist(x$snippet))
+    }
+
+    all_results <- c(all_results, simple_res)
+
+    page_token <- res$nextPageToken
+
+    if (is.null(page_token) || !get_all) break
+
+    querylist$pageToken <- page_token
+  }
+
+  fin_res <- plyr::ldply(all_results, rbind)
+
+  if (identical(simplify, TRUE)) {
+    return(fin_res)
+  }
+
+  return(res)
+}
+
