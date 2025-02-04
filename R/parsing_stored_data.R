@@ -740,24 +740,28 @@ parse_comment_filenames <- function(path = NULL, recursive = FALSE) {
 
 
 
-
 #' Parse and Unnest YouTube Comment Data
 #'
 #' This function parses and unnests YouTube comment data from JSON files.
-#' It extracts relevant fields from the comments and returns a `data.table`
-#' with one row per top-level comment.
+#' It extracts relevant fields from both top-level comments and their replies,
+#' returning a `data.table` with one row per comment. Depending on the value of
+#' `rbind_replies`, the replies are either merged with the parent comments or kept
+#' in a nested structure.
 #'
 #' @param dir A character vector specifying the directory containing JSON files.
-#'        Either 'dir' or 'filepaths' must be provided.
-#' @param cleanup Logical. Should the directory `path` checked for corrupt jsons and error jsons before parsing? Slows up process.
+#'        Either `dir` or `filepaths` must be provided.
 #' @param filepaths NOT SUPPORTED YET: A character vector specifying the filepaths to be parsed. Default is NULL.
-#' @return A `data.table` with the parsed and unnested YouTube comment data.
-#'         The resulting table includes columns for the comment text, author details,
-#'         video information, and additional metadata.
+#' @param cleanup Logical. Should the specified directory (or file paths) be checked for corrupt or error JSONs before parsing?
+#'        Enabling this will slow down the process.
+#' @param rbind_replies Logical. If `TRUE` (the default), replies are parsed, unnested, and row-bound with top-level comments,
+#'        resulting in a single `data.table` where each row represents one comment (either top-level or a reply).
+#'        If `FALSE`, replies remain nested within the top-level comments.
+#'
+#' @return A `data.table` with the parsed and unnested YouTube comment data. The resulting table includes columns
+#'         for comment text, author details, video information, and additional metadata.
 #'
 #' @export
-parse_yt_comments <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
-
+parse_yt_comments <- function(dir = NULL, filepaths = NULL, cleanup = FALSE, rbind_replies = TRUE) {
   # Check if either dir or filepaths are provided
   if (is.null(dir) && is.null(filepaths)) {
     stop("Either 'dir' or 'filepaths' must be provided.")
@@ -781,7 +785,6 @@ parse_yt_comments <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
   f <- files_df[["full_filepath"]]
   names(f) <- f
 
-
   ### Parse data from youtube
   # NOTE ADD CHECK AUTOMATIC RECOGNITION OF COMMENT DATA
   if(files_df[["plat"]][[1]] %in% c("yt")){
@@ -793,6 +796,7 @@ parse_yt_comments <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
       fill = TRUE, use.names = TRUE, idcol = "filepath"
     )
 
+    ### Store file info
     # Create unique ID - filepath + etag
     file_dt[, file_id := stringr::str_c(filepath, "_etag_", etag)]
 
@@ -812,12 +816,21 @@ parse_yt_comments <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
                              download_software)]
     dlinfo_dt <- unique(dlinfo_dt, by = "file_id")
 
+    # Convert list columns to appropriate atomic types
+    dlinfo_dt <- dlinfo_dt[, lapply(.SD, function(col) {
+      if (is.list(col)) {
+        col <- unlist(col, recursive = FALSE)
+        col <- tryCatch(as.numeric(col), warning = function(w) as.character(col), error = function(e) as.character(col))
+      }
+      return(col)
+    }), .SDcols = names(dlinfo_dt)]
 
-    # Exctract items column as named list
+    ### 'Items' = parent comments
+    # Extract items column as named list
     items_l <- file_dt$items
     names(items_l) <- file_dt$file_id
 
-    # rowbind
+    # Rowbind
     items_dt <- data.table::rbindlist(items_l, use.names = T, fill = T, idcol = "file_id")
 
     # Unlist 'snippet' column
@@ -829,17 +842,130 @@ parse_yt_comments <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
                                         names_sep = "_",
                                         names_repair = "minimal")
 
+    # Rename id_c column
+    setnames(items_dt, old = "id", new = "c_id")
+    items_dt[, c_id := as.character(unlist(c_id))]
 
-    ## Note: There are replies, which I won't unnest for the moment
-
+    ## Replies
     # Keep them separate
-    replies_dt <- items_dt[, .(id, replies)]
-    replies_dt[, id := unlist(id)]
+    replies_dt <- items_dt[, .(c_id, replies)]
+    replies_dt[, c_id := unlist(c_id)]
 
+    if(rbind_replies){
+
+      # Dropping empty values
+      replies_dt <- replies_dt[
+        !vapply(replies, function(x) is.null(x) || (length(x) == 1 && is.na(x)), logical(1))
+      ]
+
+      replies_l <- lapply(replies_dt$replies, `[[`, "comments")
+      names(replies_l) <- replies_dt$c_id
+
+      # Bind list data
+      replies_dt <- data.table::rbindlist(
+        replies_l,
+        idcol = "c_id",
+        fill = TRUE
+      )
+
+      # Unlist 'snippet' column
+      replies_dt[, snippet := purrr::map(replies_dt[, snippet], ~ unlist(.x))]
+
+      # Unnest 'snippet' column
+      replies_dt <- tidytable::unnest_wider(replies_dt,
+                                            snippet,
+                                            names_sep = "_",
+                                            names_repair = "minimal")
+
+      # Subset columns
+      required_cols_r <- c(
+        "c_id",
+        "id",
+        "snippet_channelId",
+        "snippet_videoId",
+        "snippet_textDisplay",
+        "snippet_textOriginal",
+        "snippet_authorDisplayName",
+        "snippet_authorProfileImageUrl",
+        "snippet_authorChannelUrl",
+        "snippet_authorChannelId.value",
+        "snippet_likeCount",
+        "snippet_viewerRating",
+        "snippet_canRate",
+        "snippet_publishedAt",
+        "snippet_updatedAt")
+
+      # Define columns to keep
+      keep_cols_r <- colnames(replies_dt)[colnames(replies_dt) %in% required_cols_r]
+
+      # Subset data.table
+      replies_dt <- replies_dt[, ..keep_cols_r]
+
+      # Convert list columns to appropriate atomic types
+      replies_dt <- replies_dt[, lapply(.SD, function(col) {
+        if (is.list(col)) {
+          col <- unlist(col, recursive = FALSE)
+          col <- tryCatch(as.numeric(col), warning = function(w) as.character(col), error = function(e) as.character(col))
+        }
+        return(col)
+      }), .SDcols = names(replies_dt)]
+
+      # Deduplicate dts
+      replies_dt <- unique(replies_dt, by = "id")
+
+      # Columns to rename
+      old_names_r <- c(
+        "c_id",
+        "id",
+        "snippet_channelId",
+        "snippet_videoId",
+        "snippet_textDisplay",
+        "snippet_textOriginal",
+        "snippet_authorDisplayName",
+        "snippet_authorProfileImageUrl",
+        "snippet_authorChannelUrl",
+        "snippet_authorChannelId.value",
+        "snippet_likeCount",
+        "snippet_viewerRating",
+        "snippet_canRate",
+        "snippet_publishedAt",
+        "snippet_updatedAt"
+      )
+
+      new_names_r <- c(
+        "c_id",
+        "r_id",
+        "v_channel_id",
+        "v_video_id",
+        "c_text_display",
+        "c_text_original",
+        "c_author_name",
+        "c_author_profile_img",
+        "c_author_url",
+        "c_author_id",
+        "c_like_count",
+        "c_viewer_rating",
+        "c_can_rate",
+        "c_published_time",
+        "c_updated_time"
+      )
+
+      # Rename columns
+      setnames(replies_dt, old_names_r, new_names_r)
+
+      # Create is_reply
+      replies_dt[, is_reply := TRUE]
+
+      # Left join the file_id information from items_dt
+      replies_dt <- merge(replies_dt, items_dt[, .(file_id, c_id)], by = "c_id", all.x = TRUE)
+
+    }
+
+    ### Clean names of items_dt
     # Define columns to keep
     required_cols <- c(
       "file_id",
-      "id",
+      "c_id",
       "snippet_channelId",
       "snippet_topLevelComment.snippet.videoId",
       "snippet_topLevelComment.snippet.textDisplay",
@@ -851,6 +977,7 @@ parse_yt_comments <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
       "snippet_topLevelComment.snippet.likeCount",
       "snippet_topLevelComment.snippet.viewerRating",
       "snippet_topLevelComment.snippet.canRate",
+      "snippet_topLevelComment.snippet.publishedAt",
       "snippet_topLevelComment.snippet.updatedAt",
       "snippet_canReply",
       "snippet_totalReplyCount"
@@ -865,23 +992,20 @@ parse_yt_comments <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
     items_dt <- items_dt[, lapply(.SD, function(col) {
       if (is.list(col)) {
         col <- unlist(col, recursive = FALSE)
-        # Convert to atomic vector if possible
         col <- tryCatch(as.numeric(col), warning = function(w) as.character(col), error = function(e) as.character(col))
       }
       return(col)
     }), .SDcols = names(items_dt)]
 
-
     # Deduplicate dts
-    items_dt <- unique(items_dt, by = "id")
+    items_dt <- unique(items_dt, by = "c_id")
 
-    # Merge replies
-    items_dt <- merge(items_dt, replies_dt, by = "id", all.x = T)
+    # Left-join nested replies column if rbind_replies == FALSE
+    if(rbind_replies==FALSE) items_dt <- merge(items_dt, replies_dt, by = "c_id", all.x = T)
 
     # Columns to rename
     old_names <- c(
-      "id",
-      "replies",
+      "c_id",
       "snippet_channelId",
       "snippet_topLevelComment.snippet.videoId",
       "snippet_topLevelComment.snippet.textDisplay",
@@ -893,6 +1017,7 @@ parse_yt_comments <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
       "snippet_topLevelComment.snippet.likeCount",
       "snippet_topLevelComment.snippet.viewerRating",
       "snippet_topLevelComment.snippet.canRate",
+      "snippet_topLevelComment.snippet.publishedAt",
       "snippet_topLevelComment.snippet.updatedAt",
       "snippet_canReply",
       "snippet_totalReplyCount"
@@ -900,7 +1025,6 @@ parse_yt_comments <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
 
     new_names <- c(
       "c_id",
-      "c_replies",
       "v_channel_id",
       "v_video_id",
       "c_text_display",
@@ -912,6 +1036,7 @@ parse_yt_comments <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
       "c_like_count",
       "c_viewer_rating",
       "c_can_rate",
+      "c_published_time",
       "c_updated_time",
       "c_can_reply",
       "c_n_replies"
@@ -920,13 +1045,28 @@ parse_yt_comments <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
     # Rename columns
     setnames(items_dt, old_names, new_names)
 
-    # Merge DL info
+    if(rbind_replies == FALSE) setnames(items_dt, "replies", "c_replies")
+
+    # Create is_reply flag
+    items_dt[, is_reply := FALSE]
+
+    ### Row-bind replies if requested
+    if(rbind_replies){
+      if ("c_replies" %in% names(items_dt)) {
+        items_dt[, c_replies := NULL]
+      }
+
+      # Row-bind the parent and reply comment data.tables
+      items_dt <- list(items_dt,
+                       replies_dt) |> data.table::rbindlist(use.names = T, fill = T)
+    }
+
+    # Merge download info
     items_dt <- merge(items_dt, dlinfo_dt, by = "file_id", all.x = T)
 
+    # Order by published time
+    setorder(items_dt, c_published_time)
   }
 
   return(items_dt)
-
 }
-
-
