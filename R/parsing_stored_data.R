@@ -40,15 +40,7 @@ parse_filenames <- function(path = NULL,
     }
 
     # Get filename only
-    if (dir.exists(path)[[1]]) {
-      existing_jsons <- list.files(
-        path = path,
-        pattern = ".json$",
-        recursive = recursive,
-        full.names = FALSE,
-        ignore.case = TRUE
-      )
-    }
+    existing_jsons <- basename(full_filepath)
 
     files_df <- parse_filename_strings(filepaths = existing_jsons)
     files_df$full_filepath <- full_filepath
@@ -393,22 +385,27 @@ find_latest <- function(path,
 
 
 
-
-#' Parse data from specified directory
+#' Parse data from specified directory or filepaths
 #'
-#' This function parses data from the specified directory. It first checks if the directory exists. If not, it throws an error.
-#' Then, it removes invalid JSON files from the directory, if any. Next, it parses the filenames and extracts information
-#' from them. Depending on the platform (Facebook, Instagram, or YouTube), it parses the data accordingly using the
-#' appropriate methods.
+#' This function parses data from a directory or set of filepaths, supporting Facebook, Instagram, and YouTube JSON exports.
+#' It first checks the directory existence (if provided), optionally cleans up invalid JSON files, then parses file metadata
+#' and filters by time range. Depending on the platform, it parses the data accordingly and returns a cleaned data.table.
 #'
 #' @param dir A character string specifying the directory from which data needs to be parsed. Default is NULL.
-#' @param filepaths A character vector specifying the filepaths to be parsed. Default is NULL.
-#' @param cleanup Logical. Should the directory `path` checked for corrupt jsons and error jsons before parsing? Slows up process.
+#' @param filepaths A character vector specifying specific JSON filepaths to parse. Default is NULL.
+#' @param cleanup Logical. If TRUE, removes corrupt or invalid JSONs from the input directory or filepaths before parsing. May slow down processing.
+#' @param from Optional. A character string, Date, or POSIXct object indicating the start of the time range for filtering files/posts.
+#'             If a character of format "YYYY-MM-DD" is given, it is interpreted as "YYYY-MM-DD 00:00:00" UTC.
+#' @param to Optional. A character string, Date, or POSIXct object indicating the end of the time range for filtering files/posts.
+#'           If a character of format "YYYY-MM-DD" is given, it is interpreted as "YYYY-MM-DD 23:59:59" UTC.
+#' @param verbose Logical. If TRUE, prints progress messages while parsing and unnesting data. Default is FALSE.
 #'
-#' @return A data.table containing parsed data from the specified directory or filepaths.
+#' @return A `data.table` containing parsed and unnested data from the specified platform (Facebook, Instagram, or YouTube).
 #'
 #' @export
-parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
+
+parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE,
+                       from = NULL, to = NULL, verbose = FALSE) {
 
   # Check if either dir or filepaths are provided
   if (is.null(dir) && is.null(filepaths)) {
@@ -430,9 +427,32 @@ parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
     files_df <- parse_filename_strings(filepaths = filepaths)
   }
 
+  # Filter by date
+  if(!is.null(to) && !is.null(from)){
+
+    # Helper to convert character or Date to POSIXct
+    to_posixct_start <- function(x) {
+      as.POSIXct(x, tz = "UTC") + as.difftime(0, units = "secs")
+    }
+    to_posixct_end <- function(x) {
+      as.POSIXct(x, tz = "UTC") + as.difftime(23 * 3600 + 59 * 60 + 59, units = "secs")
+    }
+
+    # Check if time component is missing (length 10 = only date)
+    from <- if (is.character(from) && nchar(from) == 10) to_posixct_start(from) else as.POSIXct(from, tz = "UTC")
+    to   <- if (is.character(to)   && nchar(to)   == 10) to_posixct_end(to)   else as.POSIXct(to, tz = "UTC")
+
+
+    files_df <- files_df |> dplyr::filter(from_datetime <= as.POSIXct(to))
+    files_df <- files_df |> dplyr::filter(to_datetime >= as.POSIXct(from))
+  }
+
   # extract the file paths
   f <- files_df[["full_filepath"]]
   names(f) <- f
+
+  dl_time_dt <- data.table::as.data.table(files_df)[, .(filepath = full_filepath, dl_datetime)]
+
 
   ###  Parse data from crowdtangle
 
@@ -454,44 +474,44 @@ parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
     # Store filename
     file_dt[, file := basename(filepath)]
 
-    # Unlist 'account' column
-    file_dt[, account := purrr::map(file_dt[, account], ~ unlist(.x))]
+    # Filter by date
+    if(!is.null(to) && !is.null(from)){
 
-    # Unnest 'account' column
-    file_dt <- tidytable::unnest_wider(file_dt,
-                                       account,
-                                       names_sep = "_",
-                                       names_repair = "minimal")
+      file_dt <- file_dt[, date := as.POSIXct(date, tz = "UTC")]
+      file_dt <- file_dt[date >= as.POSIXct(from, tz = "UTC") & date <= as.POSIXct(to, tz = "UTC")]
 
+    }
 
-    # Unlist 'media' column
-    file_dt[, statistics := purrr::map(file_dt[, statistics], ~ unlist(.x))]
+    ## Helper function for unnesting
+    unnest_tidytable <- function(dt, colname) {
+      dt[, (colname) := lapply(.SD[[1]], function(x) {
+        x <- unlist(x, recursive = TRUE, use.names = TRUE)
+        if (length(x) == 0) return(setNames(NA, "na_placeholder"))
+        x
+      }), .SDcols = colname]
 
-    # Unnest 'account' column
-    file_dt <- tidytable::unnest_wider(file_dt,
-                                       statistics,
-                                       names_sep = "_",
-                                       names_repair = "minimal")
+      tidytable::unnest_wider(dt, {{ colname }}, names_sep = "_", names_repair = "minimal")
+    }
 
+    # account
+    if(verbose){cli::cli_inform("Unnesting account column.")}
+    file_dt <- unnest_tidytable(file_dt, "account")
 
-    # Extract FB account ID from account_url;
-    # NOTE: the original 'account_id' variable seems to be specific to CT
-    file_dt[, account_id := gsub(".*\\/(\\d+)$", "\\1", account_url)]
+    # statistics
+    if(verbose){cli::cli_inform("Unnesting statistics column.")}
+    file_dt <- unnest_tidytable(file_dt, "statistics")
 
+    # media
+    if(verbose){cli::cli_inform("Unnesting media column.")}
+    file_dt <- unnest_tidytable(file_dt, "media")
 
-    # # Define columns to keep
-    # keep_cols <- colnames(file_dt)[colnames(file_dt) %in% c(
-    #   "file",
-    #   "filepath",
-    #   "date",
-    #   "account_id",
-    #   "account_handle",
-    #   "platformId"
-    # )]
+    # # expandedLinks -- Subset to first 3 links
+    # if(verbose){cli::cli_inform("Unnesting expandedLinks column - only first 3 elements each.")}
+    # file_dt <- file_dt[, expandedLinks := lapply(expandedLinks, function(x) x[seq_len(min(length(x), 3))])]
+    # file_dt <- unnest_tidytable(file_dt, "expandedLinks")
 
-    # Drop unneccessary columns
-    #  file_dt <- file_dt[, keep_cols, with = FALSE]
-
+    # if(verbose){cli::cli_inform("Unnesting expandedLinks column.")}
+    # file_dt <- unnest_tidytable(file_dt, "expandedLinks", unnest_cutoff = 2)
 
     # Columns to rename
     old_names <- c(
@@ -502,16 +522,19 @@ parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
                    "published_time")
 
     # Rename columns
-    data.table::setnames(file_dt, old_names, new_names)
+    data.table::setnames(file_dt, old_names, new_names, skip_absent = TRUE)
 
-    ## Note for later: Download time info can be merged from filenames, stored in files_df
-    ## TO DO: Store dl time in .json? - Problem: Would need to change crowdtangler again
+    # Merge dl datetiem
+    file_dt <- merge(file_dt, dl_time_dt, all.x = T)
+
 
   }
 
 
   ### Parse data from youtube
   if(files_df[["plat"]][[1]] %in% c("yt")){
+
+    if(verbose) cli::cli_inform("Parsing jsons.")
 
     # Parse and bind jsons
     file_dt <- data.table::rbindlist(
@@ -535,8 +558,19 @@ parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
         return(paste(tags, collapse = ", "))
       }
     }
-    # Extract the collapsed tags and create the new column
-    file_dt[, tags := purrr::map_chr(snippet, extract_and_collapse_tags)]
+
+
+    if(verbose){
+
+      cli::cli_inform("Unnesting tags.")
+      # Extract the collapsed tags and create the new column
+      file_dt[, tags := purrr::map_chr(snippet, extract_and_collapse_tags, .progress = T)]
+
+    }else{
+      # Extract the collapsed tags and create the new column
+      file_dt[, tags := purrr::map_chr(snippet, extract_and_collapse_tags)]
+    }
+
 
     # Using map to filter elements with length greater than 1
     file_dt[, snippet := purrr::map(file_dt[, snippet], ~Filter(function(x) length(x) == 1, .x))]
@@ -544,6 +578,8 @@ parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
     ## Rest of snippet column
 
     # Unlist 'snippet' column
+    if(verbose) cli::cli_inform("Unnesting snippet info.")
+
     file_dt[, snippet := purrr::map(file_dt[, snippet], ~ unlist(.x))]
 
     # Unnest 'snippet' column
@@ -552,6 +588,9 @@ parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
                                        names_sep = "_",
                                        names_repair = "minimal")
     ## Statistics column
+
+
+    if(verbose) cli::cli_inform("Unnesting statistics info.")
 
     # Unlist 'statistics' column
     file_dt[, statistics := purrr::map(file_dt[, statistics], ~ unlist(.x))]
@@ -633,15 +672,17 @@ parse_data <- function(dir = NULL, filepaths = NULL, cleanup = FALSE) {
                    "comment_count"
     )
 
+
+    if(verbose) cli::cli_inform("Assigning column names.")
+
     # Rename columns
-    data.table::setnames(file_dt, old_names, new_names)
+    data.table::setnames(file_dt, old_names, new_names, skip_absent = TRUE)
 
   }
 
 
   return(file_dt)
 }
-
 
 
 
