@@ -4,23 +4,34 @@
 \alias{parse_yt_comments}
 \title{Parse and Unnest YouTube Comment Data}
 \usage{
-parse_yt_comments(dir = NULL, filepaths = NULL, cleanup = FALSE)
+parse_yt_comments(
+  dir = NULL,
+  filepaths = NULL,
+  cleanup = FALSE,
+  rbind_replies = TRUE
+)
 }
 \arguments{
 \item{dir}{A character vector specifying the directory containing JSON files.
-Either 'dir' or 'filepaths' must be provided.}
+Either \code{dir} or \code{filepaths} must be provided.}
 
 \item{filepaths}{NOT SUPPORTED YET: A character vector specifying the filepaths to be parsed. Default is NULL.}
 
-\item{cleanup}{Logical. Should the directory \code{path} checked for corrupt jsons and error jsons before parsing? Slows up process.}
+\item{cleanup}{Logical. Should the specified directory (or file paths) be checked for corrupt or error JSONs before parsing?
+Enabling this will slow down the process.}
+
+\item{rbind_replies}{Logical. If \code{TRUE} (the default), replies are parsed, unnested, and row-bound with top-level comments,
+resulting in a single \code{data.table} where each row represents one comment (either top-level or a reply).
+If \code{FALSE}, replies remain nested within the top-level comments.}
 }
 \value{
-A \code{data.table} with the parsed and unnested YouTube comment data.
-The resulting table includes columns for the comment text, author details,
-video information, and additional metadata.
+A \code{data.table} with the parsed and unnested YouTube comment data. The resulting table includes columns
+for comment text, author details, video information, and additional metadata.
 }
 \description{
 This function parses and unnests YouTube comment data from JSON files.
-It extracts relevant fields from the comments and returns a \code{data.table}
-with one row per top-level comment.
+It extracts relevant fields from both top-level comments and their replies,
+returning a \code{data.table} with one row per comment. Depending on the value of
+\code{rbind_replies}, the replies are either merged with the parent comments or kept
+in a nested structure.
 }

@@ -2,23 +2,37 @@
 % Please edit documentation in R/parsing_stored_data.R
 \name{parse_data}
 \alias{parse_data}
-\title{Parse data from specified directory}
+\title{Parse data from specified directory or filepaths}
 \usage{
-parse_data(dir = NULL, filepaths = NULL, cleanup = FALSE)
+parse_data(
+  dir = NULL,
+  filepaths = NULL,
+  cleanup = FALSE,
+  from = NULL,
+  to = NULL,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{dir}{A character string specifying the directory from which data needs to be parsed. Default is NULL.}
 
-\item{filepaths}{A character vector specifying the filepaths to be parsed. Default is NULL.}
+\item{filepaths}{A character vector specifying specific JSON filepaths to parse. Default is NULL.}
 
-\item{cleanup}{Logical. Should the directory \code{path} checked for corrupt jsons and error jsons before parsing? Slows up process.}
+\item{cleanup}{Logical. If TRUE, removes corrupt or invalid JSONs from the input directory or filepaths before parsing. May slow down processing.}
+
+\item{from}{Optional. A character string, Date, or POSIXct object indicating the start of the time range for filtering files/posts.
+If a character of format "YYYY-MM-DD" is given, it is interpreted as "YYYY-MM-DD 00:00:00" UTC.}
+
+\item{to}{Optional. A character string, Date, or POSIXct object indicating the end of the time range for filtering files/posts.
+If a character of format "YYYY-MM-DD" is given, it is interpreted as "YYYY-MM-DD 23:59:59" UTC.}
+
+\item{verbose}{Logical. If TRUE, prints progress messages while parsing and unnesting data. Default is FALSE.}
 }
 \value{
-A data.table containing parsed data from the specified directory or filepaths.
+A \code{data.table} containing parsed and unnested data from the specified platform (Facebook, Instagram, or YouTube).
 }
 \description{
-This function parses data from the specified directory. It first checks if the directory exists. If not, it throws an error.
-Then, it removes invalid JSON files from the directory, if any. Next, it parses the filenames and extracts information
-from them. Depending on the platform (Facebook, Instagram, or YouTube), it parses the data accordingly using the
-appropriate methods.
+This function parses data from a directory or set of filepaths, supporting Facebook, Instagram, and YouTube JSON exports.
+It first checks the directory existence (if provided), optionally cleans up invalid JSON files, then parses file metadata
+and filters by time range. Depending on the platform, it parses the data accordingly and returns a cleaned data.table.
 }

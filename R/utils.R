@@ -39,7 +39,23 @@ utils::globalVariables(c(
   ".",
   "download_software",
   "replies",
-  "..keep_cols"
+  "..keep_cols",
+  "..keep_cols_r",
+  ".adj_dist",
+  ".best_dist",
+  ".dist",
+  ".exact",
+  ".flag_worse",
+  "c_id",
+  "c_published_time",
+  "c_replies",
+  "distance",
+  "exact_match",
+  "from_datetime",
+  "full_filepath",
+  "is_reply",
+  "poor_match",
+  "target_id"
 ))
 
 

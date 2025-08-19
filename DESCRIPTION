@@ -28,7 +28,11 @@ Imports:
     httr,
     plyr,
     utils,
-    traktok
+    traktok,
+    cli
+Suggests:
+    fastmatch,
+    stringdist
 Remotes: 
     JBGruber/crowdtangler,
     JBGruber/traktok,
